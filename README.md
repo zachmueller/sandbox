@@ -1,30 +1,21 @@
-# sandbox
+# Pac-Man Game
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple Pac-Man type game built as a browser-based experience.
 
-## About
+## Overview
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+This branch contains a classic Pac-Man style arcade game implemented with HTML, CSS, and JavaScript. The goal is to create a fun, playable game that captures the essence of the original Pac-Man — navigating a maze, eating pellets, avoiding ghosts, and racking up a high score.
 
-## Repo Structure
+## Planned Features
 
-The `main` branch is kept intentionally minimal, containing only:
+- **Maze navigation** — A grid-based maze that Pac-Man can move through
+- **Pellet collection** — Dots/pellets scattered throughout the maze for Pac-Man to eat
+- **Ghost enemies** — AI-controlled ghosts that chase Pac-Man
+- **Power pellets** — Special pellets that temporarily allow Pac-Man to eat ghosts
+- **Score tracking** — Points awarded for pellets and ghosts eaten
+- **Lives system** — Multiple lives with game over on depletion
+- **Keyboard controls** — Arrow key movement
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+## Getting Started
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
-
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+Open `index.html` in a browser to play the game.
