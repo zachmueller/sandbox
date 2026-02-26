@@ -1,30 +1,25 @@
-# sandbox
+# 2D Platformer
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple web-based side-scrolling platformer game built as a single-level experiment.
 
-## About
+## Purpose
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+Test out creating a super basic, single-level side-scrolling platformer game as a web app. The goal is to explore fundamental 2D platformer mechanics in a browser environment using HTML, CSS, and JavaScript (Canvas API).
 
-## Repo Structure
+## Planned Features
 
-The `main` branch is kept intentionally minimal, containing only:
+- **Single level** with a defined start and end
+- **Side-scrolling** camera that follows the player
+- **Basic platformer mechanics**: running, jumping, and landing on platforms
+- **Simple collision detection** with platforms and obstacles
+- **Minimal visuals** — focus on gameplay mechanics over art
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+## Tech Stack
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
+- HTML5 Canvas for rendering
+- Vanilla JavaScript for game logic
+- CSS for page layout
 
-## Cline Rules & Workflows
+## Getting Started
 
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+Open `index.html` in a browser to play the game (once implemented).
