@@ -78,6 +78,7 @@
     color: #e94560;
   }
 
+  /* Start / Game Over overlay */
   #overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -129,6 +130,125 @@
     color: #e94560;
     margin-bottom: 12px;
   }
+
+  /* Pause Menu overlay */
+  #pause-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(10, 10, 26, 0.90);
+    z-index: 20;
+    pointer-events: auto;
+  }
+
+  #pause-overlay.hidden { display: none; }
+
+  #pause-overlay h1 {
+    font-size: 42px;
+    color: #e94560;
+    margin-bottom: 24px;
+  }
+
+  .pause-menu {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 10px;
+    padding: 24px 32px;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .settings-section {
+    width: 100%;
+  }
+
+  .settings-section h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #e94560;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .setting-row label {
+    font-size: 14px;
+    color: #ccc;
+  }
+
+  .setting-row .input-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .setting-row input[type="number"] {
+    width: 60px;
+    padding: 4px 8px;
+    font-size: 14px;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    background: #0a0a1a;
+    color: #eee;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+
+  .setting-row input[type="number"]::-webkit-outer-spin-button,
+  .setting-row input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .setting-note {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    margin-top: -4px;
+  }
+
+  .pause-menu button {
+    background: #e94560;
+    color: #fff;
+    border: none;
+    padding: 10px 28px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+  }
+
+  .pause-menu button:hover {
+    background: #c73652;
+  }
+
+  .pause-menu button.secondary {
+    background: #0f3460;
+  }
+
+  .pause-menu button.secondary:hover {
+    background: #1a4a8a;
+  }
+
+  .pause-divider {
+    width: 100%;
+    height: 1px;
+    background: #0f3460;
+  }
 </style>
 </head>
 <body>
@@ -155,11 +275,33 @@
 
   <div class="board-wrapper">
     <canvas id="game-canvas" width="300" height="600"></canvas>
+
+    <!-- Start / Game Over overlay -->
     <div id="overlay">
       <h1>TETRIS</h1>
       <div id="game-over-text">Game Over!</div>
       <div class="subtitle">Classic block-stacking game</div>
       <button id="start-btn">Play</button>
+    </div>
+
+    <!-- Pause Menu overlay -->
+    <div id="pause-overlay" class="hidden">
+      <h1>PAUSED</h1>
+      <div class="pause-menu">
+        <div class="settings-section">
+          <h3>Settings</h3>
+          <div class="setting-row">
+            <label for="setting-width">Field Width</label>
+            <div class="input-group">
+              <input type="number" id="setting-width" min="5" value="10">
+            </div>
+          </div>
+          <div class="setting-note">Min: 5 · Takes effect on next game</div>
+        </div>
+        <div class="pause-divider"></div>
+        <button id="resume-btn">Resume</button>
+        <button id="restart-btn" class="secondary">Restart with Settings</button>
+      </div>
     </div>
   </div>
 
@@ -171,7 +313,7 @@
         <kbd>↑</kbd> Rotate<br>
         <kbd>↓</kbd> Soft Drop<br>
         <kbd>Space</kbd> Hard Drop<br>
-        <kbd>P</kbd> Pause
+        <kbd>Esc</kbd> / <kbd>P</kbd> Pause
       </div>
     </div>
   </div>
@@ -180,10 +322,12 @@
 <script>
 (() => {
   // --- Constants ---
-  const COLS = 10;
   const ROWS = 20;
   const BLOCK = 30;
   const NEXT_BLOCK = 20;
+
+  // --- Configurable settings ---
+  let cols = 10;
 
   const COLORS = [
     null,
@@ -197,17 +341,16 @@
   ];
 
   // SRS piece definitions: [row, col] offsets for each rotation state
-  // State 0 = spawn, 1 = R (clockwise), 2 = 2 (180), 3 = L (counter-clockwise)
   const PIECES = [
     null,
-    // I (4x4 bounding box)
+    // I
     [
       [[1,0],[1,1],[1,2],[1,3]],
       [[0,2],[1,2],[2,2],[3,2]],
       [[2,0],[2,1],[2,2],[2,3]],
       [[0,1],[1,1],[2,1],[3,1]],
     ],
-    // O (uses 3x4 bounding box, but effectively 2x2)
+    // O
     [
       [[0,1],[0,2],[1,1],[1,2]],
       [[0,1],[0,2],[1,1],[1,2]],
@@ -251,16 +394,13 @@
     ],
   ];
 
-  // SRS Wall Kick data: offsets as [row_delta, col_delta]
-  // row_delta positive = down, col_delta positive = right
-  // For JLSTZ pieces
+  // SRS Wall Kick data
   const KICKS_JLSTZ = {
     '0>1': [[0,0],[0,-1],[-1,-1],[2,0],[2,-1]],
     '1>2': [[0,0],[0,1],[1,1],[-2,0],[-2,1]],
     '2>3': [[0,0],[0,1],[-1,1],[2,0],[2,1]],
     '3>0': [[0,0],[0,-1],[1,-1],[-2,0],[-2,-1]],
   };
-  // For I piece
   const KICKS_I = {
     '0>1': [[0,0],[0,-2],[0,1],[1,-2],[-2,1]],
     '1>2': [[0,0],[0,2],[0,-1],[-1,2],[2,-1]],
@@ -274,11 +414,15 @@
   const nextCanvas = document.getElementById('next-canvas');
   const nextCtx = nextCanvas.getContext('2d');
   const overlay = document.getElementById('overlay');
+  const pauseOverlay = document.getElementById('pause-overlay');
   const startBtn = document.getElementById('start-btn');
+  const resumeBtn = document.getElementById('resume-btn');
+  const restartBtn = document.getElementById('restart-btn');
   const scoreEl = document.getElementById('score');
   const levelEl = document.getElementById('level');
   const linesEl = document.getElementById('lines');
   const gameOverText = document.getElementById('game-over-text');
+  const settingWidth = document.getElementById('setting-width');
 
   // --- Game State ---
   let board, current, next, score, lines, level, gameOver, paused;
@@ -288,13 +432,20 @@
   // Scoring
   const LINE_POINTS = [0, 100, 300, 500, 800];
 
+  function resizeCanvas() {
+    canvas.width = cols * BLOCK;
+    canvas.height = ROWS * BLOCK;
+  }
+
   function createBoard() {
-    return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
+    return Array.from({ length: ROWS }, () => new Array(cols).fill(0));
   }
 
   function randomPiece() {
     const id = Math.floor(Math.random() * 7) + 1;
-    return { id, rot: 0, row: -1, col: 3 };
+    // Center the piece horizontally; pieces use a 4-wide bounding box
+    const spawnCol = Math.floor((cols - 4) / 2);
+    return { id, rot: 0, row: -1, col: spawnCol };
   }
 
   function getBlocks(piece) {
@@ -303,7 +454,7 @@
 
   function isValid(piece) {
     return getBlocks(piece).every(([r, c]) =>
-      r < ROWS && c >= 0 && c < COLS && (r < 0 || board[r][c] === 0)
+      r < ROWS && c >= 0 && c < cols && (r < 0 || board[r][c] === 0)
     );
   }
 
@@ -318,9 +469,9 @@
     for (let r = ROWS - 1; r >= 0; r--) {
       if (board[r].every(v => v !== 0)) {
         board.splice(r, 1);
-        board.unshift(new Array(COLS).fill(0));
+        board.unshift(new Array(cols).fill(0));
         cleared++;
-        r++; // recheck same row index
+        r++;
       }
     }
     if (cleared > 0) {
@@ -346,11 +497,9 @@
     const color = COLORS[colorIdx];
     context.fillStyle = color;
     context.fillRect(x + 1, y + 1, size - 2, size - 2);
-    // highlight
     context.fillStyle = 'rgba(255,255,255,0.18)';
     context.fillRect(x + 1, y + 1, size - 2, 4);
     context.fillRect(x + 1, y + 1, 4, size - 2);
-    // shadow
     context.fillStyle = 'rgba(0,0,0,0.25)';
     context.fillRect(x + size - 4, y + 1, 3, size - 2);
     context.fillRect(x + 1, y + size - 4, size - 2, 3);
@@ -365,10 +514,10 @@
     for (let r = 0; r <= ROWS; r++) {
       ctx.beginPath();
       ctx.moveTo(0, r * BLOCK);
-      ctx.lineTo(COLS * BLOCK, r * BLOCK);
+      ctx.lineTo(cols * BLOCK, r * BLOCK);
       ctx.stroke();
     }
-    for (let c = 0; c <= COLS; c++) {
+    for (let c = 0; c <= cols; c++) {
       ctx.beginPath();
       ctx.moveTo(c * BLOCK, 0);
       ctx.lineTo(c * BLOCK, ROWS * BLOCK);
@@ -377,7 +526,7 @@
 
     // Placed blocks
     for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
+      for (let c = 0; c < cols; c++) {
         if (board[r][c]) {
           drawBlock(ctx, c * BLOCK, r * BLOCK, board[r][c], BLOCK);
         }
@@ -413,7 +562,6 @@
     nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
     if (!next) return;
     const blocks = PIECES[next.id][0];
-    // center the preview
     const minR = Math.min(...blocks.map(b => b[0]));
     const maxR = Math.max(...blocks.map(b => b[0]));
     const minC = Math.min(...blocks.map(b => b[1]));
@@ -425,6 +573,31 @@
     blocks.forEach(([r, c]) => {
       drawBlock(nextCtx, offsetX + c * NEXT_BLOCK, offsetY + r * NEXT_BLOCK, next.id, NEXT_BLOCK);
     });
+  }
+
+  // --- Pause Menu ---
+  function showPauseMenu() {
+    paused = true;
+    settingWidth.value = cols;
+    pauseOverlay.classList.remove('hidden');
+  }
+
+  function hidePauseMenu() {
+    pauseOverlay.classList.add('hidden');
+    paused = false;
+    lastTime = performance.now();
+  }
+
+  function readSettings() {
+    let w = parseInt(settingWidth.value, 10);
+    if (isNaN(w) || w < 5) w = 5;
+    settingWidth.value = w;
+    return { width: w };
+  }
+
+  function applySettings(settings) {
+    cols = settings.width;
+    resizeCanvas();
   }
 
   // --- Game Logic ---
@@ -463,9 +636,7 @@
     const oldRot = current.rot;
     const newRot = (oldRot + 1) % 4;
     const kickKey = `${oldRot}>${newRot}`;
-    // O piece doesn't rotate
     if (current.id === 2) return;
-    // Select correct kick table
     const kickTable = current.id === 1 ? KICKS_I : KICKS_JLSTZ;
     const kicks = kickTable[kickKey];
     if (!kicks) return;
@@ -515,6 +686,10 @@
   }
 
   function startGame() {
+    // Apply settings before starting
+    const settings = readSettings();
+    applySettings(settings);
+
     board = createBoard();
     score = 0;
     lines = 0;
@@ -530,6 +705,7 @@
     spawn();
     drawBoard();
     overlay.classList.add('hidden');
+    pauseOverlay.classList.add('hidden');
     gameOverText.style.display = 'none';
     if (animFrameId) cancelAnimationFrame(animFrameId);
     animFrameId = requestAnimationFrame(gameLoop);
@@ -545,15 +721,21 @@
 
   // --- Input ---
   document.addEventListener('keydown', (e) => {
-    if (gameOver) return;
+    // Allow toggling pause menu even when paused (but not when game over or not started)
+    if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+      if (gameOver) return;
+      // Don't allow pause if game hasn't started (overlay is showing)
+      if (!overlay.classList.contains('hidden')) return;
 
-    if (e.key === 'p' || e.key === 'P') {
-      paused = !paused;
-      if (!paused) lastTime = performance.now();
+      if (paused) {
+        hidePauseMenu();
+      } else {
+        showPauseMenu();
+      }
       return;
     }
 
-    if (paused) return;
+    if (gameOver || paused) return;
 
     switch (e.key) {
       case 'ArrowLeft':
@@ -582,8 +764,22 @@
   });
 
   startBtn.addEventListener('click', startGame);
+  resumeBtn.addEventListener('click', hidePauseMenu);
+  restartBtn.addEventListener('click', () => {
+    hidePauseMenu();
+    startGame();
+  });
+
+  // Enforce minimum width of 5 on blur
+  settingWidth.addEventListener('blur', () => {
+    let v = parseInt(settingWidth.value, 10);
+    if (isNaN(v) || v < 5) {
+      settingWidth.value = 5;
+    }
+  });
 
   // Initial draw
+  resizeCanvas();
   drawBoard();
 })();
 </script>
