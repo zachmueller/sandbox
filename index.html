@@ -178,25 +178,22 @@
         const walls = [
             // Left wall
             { x1: 10, y1: 0, x2: 10, y2: H - 130 },
-            // Right wall (plunger lane inner wall) — starts below top to leave a gap
-            { x1: W - 45, y1: 70, x2: W - 45, y2: H - 130 },
             // Outer right wall
             { x1: W - 10, y1: 10, x2: W - 10, y2: H },
             // Left guide to flipper
             { x1: 10, y1: H - 130, x2: 70, y2: H - 60 },
             // Right guide to flipper
             { x1: W - 45, y1: H - 130, x2: W - 70, y2: H - 60 },
-            // Top wall (main field only, stops before plunger lane)
-            { x1: 10, y1: 10, x2: W - 45, y2: 10 },
-            // Plunger lane top wall (curves ball left into field)
-            { x1: W - 45, y1: 10, x2: W - 10, y2: 10 },
-            // Top-right arc guide: guides ball from plunger lane leftward into field
-            { x1: W - 10, y1: 10, x2: W - 45, y2: 70 },
+            // Top wall
+            { x1: 10, y1: 10, x2: W - 10, y2: 10 },
             // Top-left curved guide
             { x1: 10, y1: 60, x2: 50, y2: 110 },
-            // Top-right curved guide (field side)
+            // Top-right curved guide (field side, below lane opening)
             { x1: W - 45, y1: 70, x2: W - 85, y2: 120 },
         ];
+
+        // Inner plunger lane wall — one-way: only blocks ball from field side
+        const plungerLaneWall = { x1: W - 45, y1: 70, x2: W - 45, y2: H - 130 };
 
         // Slingshots (triangular kickers)
         const slingshots = [
@@ -357,6 +354,23 @@
                 }
             }
 
+            // One-way plunger lane wall: only blocks ball coming from the left (field side)
+            {
+                const pw = plungerLaneWall;
+                const col = ballLineCollision(ball.x, ball.y, ball.r, pw.x1, pw.y1, pw.x2, pw.y2);
+                if (col && ball.x < pw.x1) {
+                    // Ball is on the field side, block it
+                    ball.x += col.nx * col.overlap;
+                    ball.y += col.ny * col.overlap;
+                    const dot = ball.vx * col.nx + ball.vy * col.ny;
+                    ball.vx -= 2 * dot * col.nx;
+                    ball.vy -= 2 * dot * col.ny;
+                    ball.vx *= BOUNCE_DAMPING;
+                    ball.vy *= BOUNCE_DAMPING;
+                }
+                // If ball is on the right (plunger lane side), no collision — ball passes through
+            }
+
             // Bumper collisions
             for (const bumper of bumpers) {
                 const col = ballCircleCollision(ball.x, ball.y, ball.r, bumper.x, bumper.y, bumper.r);
@@ -464,6 +478,14 @@
                 ctx.lineTo(wall.x2, wall.y2);
                 ctx.stroke();
             }
+
+            // Draw plunger lane inner wall (one-way)
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(plungerLaneWall.x1, plungerLaneWall.y1);
+            ctx.lineTo(plungerLaneWall.x2, plungerLaneWall.y2);
+            ctx.stroke();
 
             // Draw slingshots
             for (const sling of slingshots) {
