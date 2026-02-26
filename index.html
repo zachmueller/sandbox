@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinball</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+        }
+        canvas {
+            border: 3px solid #e94560;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+        }
+        #ui {
+            position: absolute;
+            top: -50px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #eee;
+            font-size: 18px;
+        }
+        #score {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e94560;
+            text-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+        #balls {
+            font-size: 18px;
+            color: #f5a623;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 0 15px rgba(233, 69, 96, 0.8);
+            display: none;
+        }
+        #controls {
+            position: absolute;
+            bottom: -35px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <div id="score">0</div>
+            <div id="balls">⚾ ⚾ ⚾</div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="message"></div>
+        <div id="controls">← → Flippers &nbsp;|&nbsp; ↓ Hold to charge plunger &nbsp;|&nbsp; Space to restart</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const ballsEl = document.getElementById('balls');
+        const messageEl = document.getElementById('message');
+
+        // Table dimensions
+        const W = 400;
+        const H = 700;
+        canvas.width = W;
+        canvas.height = H;
+
+        // Physics constants
+        const GRAVITY = 0.15;
+        const FRICTION = 0.999;
+        const BOUNCE_DAMPING = 0.65;
+        const FLIPPER_STRENGTH = 12;
+        const MAX_PLUNGER = 18;
+
+        // Game state
+        let score = 0;
+        let ballsRemaining = 3;
+        let gameState = 'ready'; // ready, playing, launching, gameover
+        let plungerCharge = 0;
+        let plungerCharging = false;
+
+        // Input
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (gameState === 'ready' || gameState === 'launching') {
+                    gameState = 'launching';
+                    plungerCharging = true;
+                }
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
+            if (e.key === ' ' && gameState === 'gameover') {
+                resetGame();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+            if (e.key === 'ArrowDown' && plungerCharging) {
+                launchBall();
+            }
+        });
+
+        // Ball
+        let ball = {
+            x: W - 25,
+            y: H - 80,
+            vx: 0,
+            vy: 0,
+            r: 8,
+            active: false
+        };
+
+        // Flippers
+        const FLIPPER_LENGTH = 55;
+        const FLIPPER_WIDTH = 10;
+        const FLIPPER_REST_ANGLE = 0.4;
+        const FLIPPER_ACTIVE_ANGLE = -0.6;
+
+        let leftFlipper = {
+            x: 120,
+            y: H - 80,
+            angle: FLIPPER_REST_ANGLE,
+            targetAngle: FLIPPER_REST_ANGLE,
+            side: 'left'
+        };
+
+        let rightFlipper = {
+            x: W - 120 - 40,
+            y: H - 80,
+            angle: -FLIPPER_REST_ANGLE,
+            targetAngle: -FLIPPER_REST_ANGLE,
+            side: 'right'
+        };
+
+        // Bumpers
+        const bumpers = [
+            { x: 140, y: 200, r: 25, points: 100, hit: 0 },
+            { x: 260, y: 200, r: 25, points: 100, hit: 0 },
+            { x: 200, y: 290, r: 25, points: 100, hit: 0 },
+            { x: 120, y: 370, r: 20, points: 50, hit: 0 },
+            { x: 280, y: 370, r: 20, points: 50, hit: 0 },
+            { x: 200, y: 150, r: 20, points: 150, hit: 0 },
+        ];
+
+        // Walls (line segments for deflection)
+        const walls = [
+            // Left wall
+            { x1: 10, y1: 0, x2: 10, y2: H - 130 },
+            // Right wall (leave gap for plunger lane)
+            { x1: W - 45, y1: 0, x2: W - 45, y2: H - 130 },
+            // Outer right wall
+            { x1: W - 10, y1: 0, x2: W - 10, y2: H },
+            // Left guide to flipper
+            { x1: 10, y1: H - 130, x2: 70, y2: H - 60 },
+            // Right guide to flipper
+            { x1: W - 45, y1: H - 130, x2: W - 70, y2: H - 60 },
+            // Top wall
+            { x1: 10, y1: 10, x2: W - 10, y2: 10 },
+            // Top-left curved guide
+            { x1: 10, y1: 60, x2: 50, y2: 110 },
+            // Top-right curved guide
+            { x1: W - 45, y1: 60, x2: W - 85, y2: 110 },
+        ];
+
+        // Slingshots (triangular kickers)
+        const slingshots = [
+            {
+                points: [
+                    { x: 50, y: H - 200 },
+                    { x: 30, y: H - 130 },
+                    { x: 80, y: H - 140 }
+                ],
+                hit: 0
+            },
+            {
+                points: [
+                    { x: W - 90, y: H - 200 },
+                    { x: W - 70, y: H - 130 },
+                    { x: W - 120, y: H - 140 }
+                ],
+                hit: 0
+            }
+        ];
+
+        function resetBall() {
+            ball.x = W - 25;
+            ball.y = H - 80;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.active = false;
+            plungerCharge = 0;
+            plungerCharging = false;
+            gameState = 'ready';
+        }
+
+        function resetGame() {
+            score = 0;
+            ballsRemaining = 3;
+            resetBall();
+            messageEl.style.display = 'none';
+            updateUI();
+        }
+
+        function launchBall() {
+            if (gameState !== 'launching') return;
+            ball.vy = -plungerCharge;
+            ball.vx = -0.5;
+            ball.active = true;
+            plungerCharging = false;
+            gameState = 'playing';
+        }
+
+        function addScore(pts) {
+            score += pts;
+            updateUI();
+        }
+
+        function updateUI() {
+            scoreEl.textContent = score;
+            let ballIcons = '';
+            for (let i = 0; i < ballsRemaining; i++) ballIcons += '⚾ ';
+            ballsEl.textContent = ballIcons.trim();
+        }
+
+        function showMessage(text) {
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+        }
+
+        // Collision: ball vs line segment
+        function ballLineCollision(bx, by, br, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const nx = -dy / len;
+            const ny = dx / len;
+
+            const t = ((bx - x1) * (x2 - x1) + (by - y1) * (y2 - y1)) / (len * len);
+            const clampT = Math.max(0, Math.min(1, t));
+            const closestX = x1 + clampT * dx;
+            const closestY = y1 + clampT * dy;
+
+            const distX = bx - closestX;
+            const distY = by - closestY;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+            if (dist < br) {
+                return { nx: distX / dist, ny: distY / dist, overlap: br - dist };
+            }
+            return null;
+        }
+
+        // Collision: ball vs circle
+        function ballCircleCollision(bx, by, br, cx, cy, cr) {
+            const dx = bx - cx;
+            const dy = by - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < br + cr) {
+                return { nx: dx / dist, ny: dy / dist, overlap: (br + cr) - dist };
+            }
+            return null;
+        }
+
+        // Flipper collision
+        function getFlipperEndpoint(flipper) {
+            const len = FLIPPER_LENGTH;
+            const baseX = flipper.x;
+            const baseY = flipper.y;
+            const endX = baseX + Math.cos(flipper.angle) * len * (flipper.side === 'left' ? 1 : -1);
+            const endY = baseY + Math.sin(flipper.angle) * len;
+            return { x: endX, y: endY };
+        }
+
+        function update() {
+            // Plunger charging
+            if (plungerCharging && gameState === 'launching') {
+                plungerCharge = Math.min(plungerCharge + 0.3, MAX_PLUNGER);
+            }
+
+            // Flipper input
+            if (keys['ArrowLeft']) {
+                leftFlipper.targetAngle = FLIPPER_ACTIVE_ANGLE;
+            } else {
+                leftFlipper.targetAngle = FLIPPER_REST_ANGLE;
+            }
+            if (keys['ArrowRight']) {
+                rightFlipper.targetAngle = -FLIPPER_ACTIVE_ANGLE;
+            } else {
+                rightFlipper.targetAngle = -FLIPPER_REST_ANGLE;
+            }
+
+            // Animate flippers
+            const flipSpeed = 0.3;
+            leftFlipper.angle += (leftFlipper.targetAngle - leftFlipper.angle) * flipSpeed;
+            rightFlipper.angle += (rightFlipper.targetAngle - rightFlipper.angle) * flipSpeed;
+
+            if (!ball.active) return;
+
+            // Apply gravity
+            ball.vy += GRAVITY;
+
+            // Apply friction
+            ball.vx *= FRICTION;
+            ball.vy *= FRICTION;
+
+            // Move ball
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Wall collisions
+            for (const wall of walls) {
+                const col = ballLineCollision(ball.x, ball.y, ball.r, wall.x1, wall.y1, wall.x2, wall.y2);
+                if (col) {
+                    ball.x += col.nx * col.overlap;
+                    ball.y += col.ny * col.overlap;
+                    const dot = ball.vx * col.nx + ball.vy * col.ny;
+                    ball.vx -= 2 * dot * col.nx;
+                    ball.vy -= 2 * dot * col.ny;
+                    ball.vx *= BOUNCE_DAMPING;
+                    ball.vy *= BOUNCE_DAMPING;
+                }
+            }
+
+            // Bumper collisions
+            for (const bumper of bumpers) {
+                const col = ballCircleCollision(ball.x, ball.y, ball.r, bumper.x, bumper.y, bumper.r);
+                if (col) {
+                    ball.x += col.nx * col.overlap;
+                    ball.y += col.ny * col.overlap;
+                    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                    const boostSpeed = Math.max(speed, 5);
+                    ball.vx = col.nx * boostSpeed;
+                    ball.vy = col.ny * boostSpeed;
+                    addScore(bumper.points);
+                    bumper.hit = 10;
+                }
+            }
+
+            // Flipper collisions
+            for (const flipper of [leftFlipper, rightFlipper]) {
+                const end = getFlipperEndpoint(flipper);
+                const col = ballLineCollision(ball.x, ball.y, ball.r, flipper.x, flipper.y, end.x, end.y);
+                if (col) {
+                    ball.x += col.nx * col.overlap;
+                    ball.y += col.ny * col.overlap;
+
+                    const dot = ball.vx * col.nx + ball.vy * col.ny;
+                    ball.vx -= 2 * dot * col.nx;
+                    ball.vy -= 2 * dot * col.ny;
+
+                    // Add flipper kick if actively flipping
+                    const isActive = (flipper.side === 'left' && keys['ArrowLeft']) ||
+                                     (flipper.side === 'right' && keys['ArrowRight']);
+                    if (isActive) {
+                        ball.vy -= FLIPPER_STRENGTH;
+                        ball.vx += (flipper.side === 'left' ? 2 : -2);
+                    }
+
+                    ball.vx *= BOUNCE_DAMPING;
+                    ball.vy *= BOUNCE_DAMPING;
+                }
+            }
+
+            // Slingshot collisions
+            for (const sling of slingshots) {
+                const pts = sling.points;
+                for (let i = 0; i < pts.length; i++) {
+                    const p1 = pts[i];
+                    const p2 = pts[(i + 1) % pts.length];
+                    const col = ballLineCollision(ball.x, ball.y, ball.r, p1.x, p1.y, p2.x, p2.y);
+                    if (col) {
+                        ball.x += col.nx * col.overlap;
+                        ball.y += col.ny * col.overlap;
+                        const speed = Math.max(Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy), 4);
+                        ball.vx = col.nx * speed * 1.3;
+                        ball.vy = col.ny * speed * 1.3;
+                        addScore(25);
+                        sling.hit = 8;
+                        break;
+                    }
+                }
+            }
+
+            // Speed cap
+            const maxSpeed = 20;
+            const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+            if (currentSpeed > maxSpeed) {
+                ball.vx = (ball.vx / currentSpeed) * maxSpeed;
+                ball.vy = (ball.vy / currentSpeed) * maxSpeed;
+            }
+
+            // Drain detection (ball falls off bottom)
+            if (ball.y > H + 20) {
+                ballsRemaining--;
+                updateUI();
+                if (ballsRemaining <= 0) {
+                    gameState = 'gameover';
+                    ball.active = false;
+                    showMessage('GAME OVER\nScore: ' + score + '\n\nPress Space to restart');
+                } else {
+                    resetBall();
+                }
+            }
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#0f3460';
+            ctx.fillRect(0, 0, W, H);
+
+            // Playing field gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#16213e');
+            grad.addColorStop(1, '#0f3460');
+            ctx.fillStyle = grad;
+            ctx.fillRect(10, 10, W - 20, H - 10);
+
+            // Plunger lane
+            ctx.fillStyle = '#1a1a3e';
+            ctx.fillRect(W - 44, 10, 34, H - 10);
+
+            // Draw walls
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            for (const wall of walls) {
+                ctx.beginPath();
+                ctx.moveTo(wall.x1, wall.y1);
+                ctx.lineTo(wall.x2, wall.y2);
+                ctx.stroke();
+            }
+
+            // Draw slingshots
+            for (const sling of slingshots) {
+                ctx.fillStyle = sling.hit > 0 ? '#f5a623' : '#533483';
+                ctx.strokeStyle = sling.hit > 0 ? '#f5a623' : '#e94560';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sling.points[0].x, sling.points[0].y);
+                for (let i = 1; i < sling.points.length; i++) {
+                    ctx.lineTo(sling.points[i].x, sling.points[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                if (sling.hit > 0) sling.hit--;
+            }
+
+            // Draw bumpers
+            for (const bumper of bumpers) {
+                const glow = bumper.hit > 0;
+                
+                // Outer ring
+                ctx.beginPath();
+                ctx.arc(bumper.x, bumper.y, bumper.r, 0, Math.PI * 2);
+                ctx.fillStyle = glow ? '#f5a623' : '#533483';
+                ctx.fill();
+                ctx.strokeStyle = glow ? '#fff' : '#e94560';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Inner circle
+                ctx.beginPath();
+                ctx.arc(bumper.x, bumper.y, bumper.r * 0.6, 0, Math.PI * 2);
+                ctx.fillStyle = glow ? '#fff' : '#e94560';
+                ctx.fill();
+
+                // Points text
+                ctx.fillStyle = glow ? '#000' : '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(bumper.points, bumper.x, bumper.y);
+
+                if (bumper.hit > 0) bumper.hit--;
+            }
+
+            // Draw flippers
+            for (const flipper of [leftFlipper, rightFlipper]) {
+                const end = getFlipperEndpoint(flipper);
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#e94560';
+                ctx.lineWidth = FLIPPER_WIDTH;
+                ctx.beginPath();
+                ctx.moveTo(flipper.x, flipper.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+
+                // Pivot point
+                ctx.beginPath();
+                ctx.arc(flipper.x, flipper.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#f5a623';
+                ctx.fill();
+            }
+
+            // Drain gap markers
+            ctx.fillStyle = '#e94560';
+            ctx.fillRect(65, H - 62, 5, 15);
+            ctx.fillRect(W - 75, H - 62, 5, 15);
+
+            // Draw plunger
+            if (gameState === 'ready' || gameState === 'launching') {
+                const plungerY = H - 40 + (plungerCharge / MAX_PLUNGER) * 30;
+                ctx.fillStyle = '#888';
+                ctx.fillRect(W - 35, H - 40, 20, 5);
+
+                // Spring
+                ctx.strokeStyle = '#aaa';
+                ctx.lineWidth = 2;
+                const springTop = H - 35;
+                const springBottom = plungerY;
+                const segments = 6;
+                ctx.beginPath();
+                ctx.moveTo(W - 25, springTop);
+                for (let i = 0; i <= segments; i++) {
+                    const t = i / segments;
+                    const sy = springTop + (springBottom - springTop) * t;
+                    const sx = W - 25 + (i % 2 === 0 ? -5 : 5);
+                    ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+
+                // Plunger handle
+                ctx.fillStyle = '#e94560';
+                ctx.fillRect(W - 32, plungerY, 14, 20);
+                ctx.fillStyle = '#f5a623';
+                ctx.fillRect(W - 30, plungerY + 2, 10, 4);
+
+                // Charge indicator
+                if (plungerCharge > 0) {
+                    const chargeRatio = plungerCharge / MAX_PLUNGER;
+                    ctx.fillStyle = `rgb(${Math.floor(245 * chargeRatio)}, ${Math.floor(166 * (1 - chargeRatio))}, 35)`;
+                    ctx.fillRect(W - 8, H - 60, 5, 40);
+                    ctx.fillStyle = '#f5a623';
+                    ctx.fillRect(W - 8, H - 60 + 40 * (1 - chargeRatio), 5, 40 * chargeRatio);
+                }
+            }
+
+            // Draw ball
+            if (ball.active) {
+                // Ball shadow
+                ctx.beginPath();
+                ctx.arc(ball.x + 2, ball.y + 2, ball.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fill();
+
+                // Ball
+                const ballGrad = ctx.createRadialGradient(ball.x - 2, ball.y - 2, 1, ball.x, ball.y, ball.r);
+                ballGrad.addColorStop(0, '#fff');
+                ballGrad.addColorStop(0.5, '#ddd');
+                ballGrad.addColorStop(1, '#999');
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+                ctx.fillStyle = ballGrad;
+                ctx.fill();
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            } else if (gameState === 'ready' || gameState === 'launching') {
+                // Ball on plunger
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+                const ballGrad = ctx.createRadialGradient(ball.x - 2, ball.y - 2, 1, ball.x, ball.y, ball.r);
+                ballGrad.addColorStop(0, '#fff');
+                ballGrad.addColorStop(1, '#999');
+                ctx.fillStyle = ballGrad;
+                ctx.fill();
+            }
+
+            // Ready text
+            if (gameState === 'ready') {
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Hold ↓ to charge', W / 2, H / 2);
+                ctx.fillText('Release to launch!', W / 2, H / 2 + 25);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        updateUI();
+        gameLoop();
+    </script>
+</body>
+</html>
