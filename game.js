@@ -2,7 +2,7 @@
 (function () {
   // Constants
   var W = 800, H = 480, TILE = 32;
-  var GRAV = 0.6, FRIC = 0.82, PSPD = 3.5, PJMP = -11, ESPD = 1;
+  var GRAV = 0.6, FRIC = 0.82, PSPD = 3.5, PJMP = -13, ESPD = 1;
 
   var canvas = document.getElementById("game");
   var ctx = canvas.getContext("2d");
