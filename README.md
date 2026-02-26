@@ -1,30 +1,20 @@
-# sandbox
+# Minesweeper
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple, browser-based Minesweeper game built from scratch.
 
-## About
+## Overview
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+This branch contains the implementation of a classic Minesweeper game. The goal is to create a clean, playable version of the iconic puzzle game using HTML, CSS, and JavaScript — no external dependencies required.
 
-## Repo Structure
+## Planned Features
 
-The `main` branch is kept intentionally minimal, containing only:
+- **Classic Minesweeper gameplay** — left-click to reveal cells, right-click to flag potential mines
+- **Configurable grid size and mine count** — support for beginner, intermediate, and expert difficulty levels
+- **Flood-fill reveal** — clicking an empty cell automatically reveals all connected empty cells
+- **Timer and mine counter** — track elapsed time and remaining unflagged mines
+- **Win/loss detection** — game ends when a mine is revealed or all safe cells are uncovered
+- **Clean, responsive UI** — playable in any modern browser
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+## Getting Started
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
-
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+Once implemented, simply open `index.html` in a browser to play.
