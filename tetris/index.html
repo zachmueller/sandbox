@@ -541,9 +541,11 @@
       getBlocks(ghost).forEach(([r, c]) => {
         if (r >= 0) {
           ctx.strokeStyle = COLORS[ghost.id];
-          ctx.globalAlpha = 0.3;
+          ctx.globalAlpha = 0.7;
+          ctx.lineWidth = 2;
           ctx.strokeRect(c * BLOCK + 2, r * BLOCK + 2, BLOCK - 4, BLOCK - 4);
           ctx.globalAlpha = 1;
+          ctx.lineWidth = 1;
         }
       });
     }
