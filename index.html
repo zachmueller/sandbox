@@ -178,20 +178,24 @@
         const walls = [
             // Left wall
             { x1: 10, y1: 0, x2: 10, y2: H - 130 },
-            // Right wall (leave gap for plunger lane)
-            { x1: W - 45, y1: 0, x2: W - 45, y2: H - 130 },
+            // Right wall (plunger lane inner wall) — starts below top to leave a gap
+            { x1: W - 45, y1: 70, x2: W - 45, y2: H - 130 },
             // Outer right wall
-            { x1: W - 10, y1: 0, x2: W - 10, y2: H },
+            { x1: W - 10, y1: 10, x2: W - 10, y2: H },
             // Left guide to flipper
             { x1: 10, y1: H - 130, x2: 70, y2: H - 60 },
             // Right guide to flipper
             { x1: W - 45, y1: H - 130, x2: W - 70, y2: H - 60 },
-            // Top wall
-            { x1: 10, y1: 10, x2: W - 10, y2: 10 },
+            // Top wall (main field only, stops before plunger lane)
+            { x1: 10, y1: 10, x2: W - 45, y2: 10 },
+            // Plunger lane top wall (curves ball left into field)
+            { x1: W - 45, y1: 10, x2: W - 10, y2: 10 },
+            // Top-right arc guide: guides ball from plunger lane leftward into field
+            { x1: W - 10, y1: 10, x2: W - 45, y2: 70 },
             // Top-left curved guide
             { x1: 10, y1: 60, x2: 50, y2: 110 },
-            // Top-right curved guide
-            { x1: W - 45, y1: 60, x2: W - 85, y2: 110 },
+            // Top-right curved guide (field side)
+            { x1: W - 45, y1: 70, x2: W - 85, y2: 120 },
         ];
 
         // Slingshots (triangular kickers)
