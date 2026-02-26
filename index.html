@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit Platformer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            border: 4px solid #e94560;
+        }
+        canvas { display: block; image-rendering: pixelated; }
+        #ui {
+            position: absolute; top: 10px; left: 10px;
+            color: #fff; font-size: 16px;
+            text-shadow: 2px 2px #000;
+            pointer-events: none; z-index: 10;
+        }
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); color: #fff; font-size: 20px; text-align: center; z-index: 20;
+        }
+        #overlay h1 { font-size: 36px; color: #e94560; margin-bottom: 20px; text-shadow: 3px 3px #000; }
+        #overlay p { margin: 6px 0; text-shadow: 2px 2px #000; }
+        #overlay .controls { margin-top: 20px; font-size: 14px; color: #aaa; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="game"></canvas>
+        <div id="ui">
+            <div id="score">SCORE: 0</div>
+            <div id="lives">LIVES: ♥♥♥</div>
+        </div>
+        <div id="overlay">
+            <h1>8-BIT PLATFORMER</h1>
+            <p>Reach the flag at the end of the level!</p>
+            <p>Stomp enemies from above to defeat them.</p>
+            <p>Collect coins for points.</p>
+            <div class="controls">
+                <p>&#8592; &#8594; or A/D to move</p>
+                <p>SPACE or &#8593; or W to jump</p>
+                <p>Press SPACE to start</p>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
