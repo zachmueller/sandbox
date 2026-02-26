@@ -15,11 +15,15 @@ The `main` branch is kept intentionally minimal, containing only:
 
 Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
 
-## Cline Rules
+## Cline Rules & Workflows
 
 The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
 
+**Rules:**
 - **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
+
+**Workflows:**
+- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
 
 ## License
 
