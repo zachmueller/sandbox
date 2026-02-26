@@ -1,30 +1,21 @@
-# sandbox
+# Pinball
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple pinball-style game built as a sandbox experiment.
 
-## About
+## Description
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+This branch is dedicated to creating a simple pinball type game. The goal is to build an interactive, browser-based pinball experience with core mechanics including:
 
-## Repo Structure
+- **Flippers** — Player-controlled paddles to keep the ball in play
+- **Ball physics** — Realistic bouncing, gravity, and collision detection
+- **Bumpers & obstacles** — Score-boosting elements placed around the table
+- **Score tracking** — Points awarded for hitting targets and bumpers
+- **Launch mechanism** — Spring-loaded plunger to launch the ball into play
 
-The `main` branch is kept intentionally minimal, containing only:
+## Tech Stack
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+The game will be built using HTML, CSS, and JavaScript (Canvas API) to keep it lightweight and runnable directly in the browser with no additional dependencies.
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
+## Getting Started
 
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+Open `index.html` in a browser to play the game (once implemented).
