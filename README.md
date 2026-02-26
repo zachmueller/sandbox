@@ -1,30 +1,19 @@
-# sandbox
+# tetris-opus
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+## Purpose
 
-## About
+A quick experiment to evaluate how easily the **Claude Opus 4.6** model can create a fully self-contained web application running **Tetris** — built entirely in a single HTML file (or minimal set of files) with no external dependencies.
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+## Goals
 
-## Repo Structure
+- Test Claude Opus 4.6's ability to generate a complete, playable Tetris game as a web app
+- The game should be self-contained (HTML, CSS, and JavaScript bundled together)
+- Evaluate code quality, correctness, and completeness of the AI-generated output
+- Minimal to no manual intervention — the model should produce a working game in a single pass if possible
 
-The `main` branch is kept intentionally minimal, containing only:
+## How to Run
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+Once the Tetris app is created, simply open the HTML file in a browser:
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
-
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+```bash
+open index.html
