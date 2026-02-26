@@ -310,6 +310,7 @@
       <h3>Controls</h3>
       <div class="controls-info">
         <kbd>←</kbd> <kbd>→</kbd> Move<br>
+        <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> Fast Move<br>
         <kbd>↑</kbd> Rotate<br>
         <kbd>↓</kbd> Soft Drop<br>
         <kbd>Space</kbd> Hard Drop<br>
@@ -632,6 +633,26 @@
     if (isValid(test)) current.col++;
   }
 
+  function moveLeftBy(n) {
+    for (let i = 0; i < n; i++) {
+      const test = { ...current, col: current.col - 1 };
+      if (isValid(test)) current.col--;
+      else break;
+    }
+  }
+
+  function moveRightBy(n) {
+    for (let i = 0; i < n; i++) {
+      const test = { ...current, col: current.col + 1 };
+      if (isValid(test)) current.col++;
+      else break;
+    }
+  }
+
+  function getShiftStep() {
+    return Math.max(2, Math.floor(cols / 3));
+  }
+
   function rotate() {
     const oldRot = current.rot;
     const newRot = (oldRot + 1) % 4;
@@ -740,11 +761,13 @@
     switch (e.key) {
       case 'ArrowLeft':
         e.preventDefault();
-        moveLeft();
+        if (e.shiftKey) moveLeftBy(getShiftStep());
+        else moveLeft();
         break;
       case 'ArrowRight':
         e.preventDefault();
-        moveRight();
+        if (e.shiftKey) moveRightBy(getShiftStep());
+        else moveRight();
         break;
       case 'ArrowDown':
         e.preventDefault();
