@@ -1,30 +1,15 @@
-# sandbox
+# tetris-sonnet
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+## Purpose
 
-## About
+Re-attempt at creating a simple Tetris web app, this time using the **Sonnet 4.6** model.
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+## Background
 
-## Repo Structure
+This branch explores building a functional Tetris game as a single-page web application. The goal is to evaluate how the Sonnet 4.6 model approaches the task of generating a complete, playable Tetris implementation — comparing its output and approach against prior attempts.
 
-The `main` branch is kept intentionally minimal, containing only:
+## Goals
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
-
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
-
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+- Build a simple, playable Tetris game using HTML, CSS, and JavaScript
+- Keep the implementation self-contained (ideally a single `index.html` file or minimal file set)
+- Evaluate the quality and completeness of the Sonnet 4.6 model's output for this task
