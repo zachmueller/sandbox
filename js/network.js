@@ -51,6 +51,11 @@ export class NetworkManager {
      */
     createGame() {
         return new Promise((resolve, reject) => {
+            if (typeof Peer === 'undefined') {
+                reject(new Error('PeerJS is still loading. Please try again in a moment.'));
+                return;
+            }
+
             // Generate a short, memorable game code
             const code = 'rummi-' + Math.random().toString(36).substring(2, 8);
 
@@ -87,6 +92,11 @@ export class NetworkManager {
      */
     joinGame(gameCode) {
         return new Promise((resolve, reject) => {
+            if (typeof Peer === 'undefined') {
+                reject(new Error('PeerJS is still loading. Please try again in a moment.'));
+                return;
+            }
+
             this.peer = new Peer(undefined, {
                 debug: 1,
             });

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rummikub P2P</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" async></script>
 </head>
 <body>
     <!-- Lobby Screen -->
@@ -15,17 +15,35 @@
             <p class="subtitle">Play Rummikub with friends — no server needed</p>
 
             <div class="lobby-section">
-                <h2>Create a Game</h2>
+                <h2>Play vs Computer</h2>
+                <div class="input-group">
+                    <input type="text" id="local-name" placeholder="Your name" maxlength="20">
+                    <div class="player-count-selector">
+                        <label for="player-count">Total players (including you):</label>
+                        <div class="player-count-controls">
+                            <button id="player-count-dec" class="btn btn-small">−</button>
+                            <span id="player-count-display" class="player-count-value">2</span>
+                            <button id="player-count-inc" class="btn btn-small">+</button>
+                        </div>
+                    </div>
+                    <button id="local-game-btn" class="btn btn-primary">Start Local Game</button>
+                </div>
+            </div>
+
+            <div class="lobby-divider"><span>OR PLAY ONLINE</span></div>
+
+            <div class="lobby-section">
+                <h2>Create Online Game</h2>
                 <div class="input-group">
                     <input type="text" id="player-name" placeholder="Your name" maxlength="20">
-                    <button id="create-game-btn" class="btn btn-primary">Create Game</button>
+                    <button id="create-game-btn" class="btn btn-secondary">Create Game</button>
                 </div>
             </div>
 
             <div class="lobby-divider"><span>OR</span></div>
 
             <div class="lobby-section">
-                <h2>Join a Game</h2>
+                <h2>Join Online Game</h2>
                 <div class="input-group">
                     <input type="text" id="join-name" placeholder="Your name" maxlength="20">
                     <input type="text" id="game-code" placeholder="Game code" maxlength="30">

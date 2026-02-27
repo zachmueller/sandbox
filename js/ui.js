@@ -59,6 +59,7 @@ export class UIManager {
         this.selectedTiles = new Set();     // Set of tile IDs selected on rack
         this.isMyTurn = false;
         this.hasPlayedInitialMeld = false;
+        this.computerPlayerIds = new Set(); // IDs of computer players
 
         // Snapshot of table state at start of turn (for undo)
         this.turnStartTable = null;
@@ -509,6 +510,9 @@ export class UIManager {
         } else if (this.isMyTurn) {
             this.turnIndicatorEl.textContent = 'Your Turn!';
             this.turnIndicatorEl.className = 'turn-indicator my-turn';
+        } else if (this.computerPlayerIds.has(currentPlayer.id)) {
+            this.turnIndicatorEl.textContent = `🤖 ${currentPlayer.name} is thinking...`;
+            this.turnIndicatorEl.className = 'turn-indicator computer-thinking';
         } else {
             this.turnIndicatorEl.textContent = `${currentPlayer.name}'s turn`;
             this.turnIndicatorEl.className = 'turn-indicator';
@@ -539,6 +543,7 @@ export class UIManager {
 
             const isCurrent = view.players[view.currentPlayerIndex].id === player.id;
             const isMe = player.id === view.myPlayerId;
+            const isCpu = this.computerPlayerIds.has(player.id);
 
             if (isCurrent) card.classList.add('current-turn');
             if (isMe) card.classList.add('is-me');
@@ -547,8 +552,10 @@ export class UIManager {
                 ? view.hand.length
                 : view.handCounts[player.id];
 
+            const namePrefix = isMe ? '⭐ ' : (isCpu ? '🤖 ' : '');
+
             card.innerHTML = `
-                <div class="opponent-name">${isMe ? '⭐ ' : ''}${player.name}</div>
+                <div class="opponent-name">${namePrefix}${player.name}</div>
                 <div class="opponent-tiles">${tileCount} tiles</div>
             `;
 
