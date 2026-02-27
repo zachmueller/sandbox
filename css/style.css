@@ -286,6 +286,10 @@ header h1 {
     flex-shrink: 0;
 }
 
+.cell-stroke-svg {
+    display: block;
+}
+
 .stroke-label {
     font-size: 0.6rem;
     font-weight: 500;

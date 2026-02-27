@@ -236,6 +236,30 @@
         updateActionButtons();
     }
 
+    // === Helper: create a small stroke SVG for cells/modal ===
+    function createCellStrokeSVG(strokeName, size) {
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 32 32");
+        svg.setAttribute("width", String(size || 24));
+        svg.setAttribute("height", String(size || 24));
+        svg.classList.add("cell-stroke-svg");
+
+        const pathData = STROKE_SVG_PATHS[strokeName];
+        if (pathData) {
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", pathData);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", "currentColor");
+            path.setAttribute("stroke-width", "2.5");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+            svg.appendChild(path);
+        }
+
+        return svg;
+    }
+
     // === Update Current Row Display ===
     function updateCurrentRow() {
         const rowEl = boardEl.querySelector(`.row[data-row="${currentRow}"]`);
@@ -244,11 +268,11 @@
 
         cells.forEach((cell, i) => {
             // Remove old state
-            cell.textContent = "";
+            cell.innerHTML = "";
             cell.classList.remove("filled");
 
             if (i < currentGuess.length) {
-                cell.textContent = currentGuess[i];
+                cell.appendChild(createCellStrokeSVG(currentGuess[i], 28));
                 cell.classList.add("filled");
             }
         });
@@ -419,7 +443,20 @@
         modalAnswer.textContent = targetEntry.character;
         modalPinyin.textContent = targetEntry.pinyin;
         modalMeaning.textContent = `"${targetEntry.meaning}"`;
-        modalStrokes.textContent = `Strokes: ${targetEntry.strokes.join(" → ")}`;
+        // Build visual stroke sequence for modal
+        modalStrokes.innerHTML = "";
+        const label = document.createTextNode("Strokes: ");
+        modalStrokes.appendChild(label);
+        targetEntry.strokes.forEach((strokeName, idx) => {
+            if (idx > 0) {
+                const arrow = document.createTextNode(" → ");
+                modalStrokes.appendChild(arrow);
+            }
+            const svg = createCellStrokeSVG(strokeName, 18);
+            svg.style.verticalAlign = "middle";
+            svg.style.display = "inline";
+            modalStrokes.appendChild(svg);
+        });
 
         modal.classList.remove("hidden");
     }
