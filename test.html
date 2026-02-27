@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rummikub P2P — Test Suite</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Courier New', monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+        h1 { margin-bottom: 10px; color: #f8d866; }
+        h2 { margin: 20px 0 10px; color: #6ec6ff; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .pass { color: #4caf50; }
+        .fail { color: #f44336; font-weight: bold; }
+        .section { margin-bottom: 20px; }
+        .test-line { padding: 3px 0 3px 20px; font-size: 14px; }
+        .summary { margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; }
+        .summary.all-pass { background: #1b5e20; }
+        .summary.has-fail { background: #b71c1c; }
+        pre { background: #111; padding: 10px; border-radius: 6px; overflow-x: auto; margin: 5px 0; font-size: 12px; color: #ccc; }
+    </style>
+</head>
+<body>
+    <h1>🎲 Rummikub P2P — Test Suite</h1>
+    <div id="results"></div>
+    <div id="summary"></div>
+
+    <script type="module">
+        import { createTilePool, seededShuffle, getTileValue, getTotalValue, COLORS, NUMBERS } from './js/tiles.js';
+        import { isValidMeld, isValidGroup, isValidRun, validateTable, meetsInitialMeldRequirement } from './js/melds.js';
+        import { createGameState, getCurrentPlayer, advanceTurn, drawTile, applyTurn, calculateScores, createPlayerView } from './js/gameState.js';
+
+        const resultsEl = document.getElementById('results');
+        const summaryEl = document.getElementById('summary');
+        let totalPass = 0;
+        let totalFail = 0;
+        let currentSection = null;
+
+        function section(name) {
+            const h2 = document.createElement('h2');
+            h2.textContent = name;
+            resultsEl.appendChild(h2);
+            currentSection = document.createElement('div');
+            currentSection.className = 'section';
+            resultsEl.appendChild(currentSection);
+        }
+
+        function assert(description, condition) {
+            const div = document.createElement('div');
+            div.className = 'test-line';
+            if (condition) {
+                div.innerHTML = `<span class="pass">✅ PASS</span> — ${description}`;
+                totalPass++;
+            } else {
+                div.innerHTML = `<span class="fail">❌ FAIL</span> — ${description}`;
+                totalFail++;
+            }
+            (currentSection || resultsEl).appendChild(div);
+        }
+
+        function assertEqual(description, actual, expected) {
+            const pass = JSON.stringify(actual) === JSON.stringify(expected);
+            const div = document.createElement('div');
+            div.className = 'test-line';
+            if (pass) {
+                div.innerHTML = `<span class="pass">✅ PASS</span> — ${description}`;
+                totalPass++;
+            } else {
+                div.innerHTML = `<span class="fail">❌ FAIL</span> — ${description} (expected: ${JSON.stringify(expected)}, got: ${JSON.stringify(actual)})`;
+                totalFail++;
+            }
+            (currentSection || resultsEl).appendChild(div);
+        }
+
+        function showSummary() {
+            const total = totalPass + totalFail;
+            summaryEl.className = totalFail === 0 ? 'summary all-pass' : 'summary has-fail';
+            summaryEl.textContent = `${totalPass}/${total} tests passed` + (totalFail > 0 ? ` — ${totalFail} FAILED` : ' ✅ All good!');
+        }
+
+        // ===========================
+        // 1. TILE POOL TESTS
+        // ===========================
+        section('1. Tile Pool');
+
+        const pool = createTilePool();
+        assertEqual('Pool has 106 tiles', pool.length, 106);
+
+        const jokers = pool.filter(t => t.isJoker);
+        assertEqual('Pool has 2 jokers', jokers.length, 2);
+
+        const nonJokers = pool.filter(t => !t.isJoker);
+        assertEqual('Pool has 104 numbered tiles', nonJokers.length, 104);
+
+        // Each color should have 26 tiles (2 copies of 13 numbers)
+        for (const color of COLORS) {
+            const colorTiles = nonJokers.filter(t => t.color === color);
+            assertEqual(`Color "${color}" has 26 tiles`, colorTiles.length, 26);
+        }
+
+        // All tiles should have unique IDs
+        const ids = new Set(pool.map(t => t.id));
+        assertEqual('All tiles have unique IDs', ids.size, 106);
+
+        // Tile values
+        const jokerTile = pool.find(t => t.isJoker);
+        assertEqual('Joker value is 30', getTileValue(jokerTile), 30);
+
+        const tile5 = pool.find(t => t.number === 5 && !t.isJoker);
+        assertEqual('Tile with number 5 has value 5', getTileValue(tile5), 5);
+
+        const tile13 = pool.find(t => t.number === 13 && !t.isJoker);
+        assertEqual('Tile with number 13 has value 13', getTileValue(tile13), 13);
+
+        // Total value test
+        const smallSet = [pool.find(t => t.number === 3 && !t.isJoker), pool.find(t => t.number === 7 && !t.isJoker)];
+        assertEqual('getTotalValue([3, 7]) = 10', getTotalValue(smallSet), 10);
+
+        // Seeded shuffle determinism
+        const pool1 = createTilePool();
+        seededShuffle(pool1, 12345);
+        const pool2 = createTilePool();
+        seededShuffle(pool2, 12345);
+        const pool1ids = pool1.map(t => t.id);
+        const pool2ids = pool2.map(t => t.id);
+        assertEqual('Seeded shuffle is deterministic', pool1ids, pool2ids);
+
+        const pool3 = createTilePool();
+        seededShuffle(pool3, 99999);
+        const pool3ids = pool3.map(t => t.id);
+        assert('Different seeds produce different orders', JSON.stringify(pool1ids) !== JSON.stringify(pool3ids));
+
+        // ===========================
+        // 2. MELD VALIDATION — GROUPS
+        // ===========================
+        section('2. Meld Validation — Groups');
+
+        // Helper to make tiles
+        function makeTile(id, color, number, isJoker = false) {
+            return { id, color, number, isJoker };
+        }
+
+        // Valid group: 3 tiles, same number, different colors
+        const group3 = [
+            makeTile(200, 'red', 7),
+            makeTile(201, 'blue', 7),
+            makeTile(202, 'black', 7),
+        ];
+        assert('Valid group of 3 (same number, different colors)', isValidGroup(group3));
+        assert('Valid meld: group of 3', isValidMeld(group3));
+
+        // Valid group: 4 tiles
+        const group4 = [
+            makeTile(210, 'red', 10),
+            makeTile(211, 'blue', 10),
+            makeTile(212, 'orange', 10),
+            makeTile(213, 'black', 10),
+        ];
+        assert('Valid group of 4 (all colors)', isValidGroup(group4));
+
+        // Invalid: 2 tiles
+        const group2 = [
+            makeTile(220, 'red', 5),
+            makeTile(221, 'blue', 5),
+        ];
+        assert('Invalid group: only 2 tiles', !isValidGroup(group2));
+
+        // Invalid: 5 tiles
+        const group5 = [
+            makeTile(230, 'red', 5),
+            makeTile(231, 'blue', 5),
+            makeTile(232, 'orange', 5),
+            makeTile(233, 'black', 5),
+            makeTile(234, 'joker', 0, true),
+        ];
+        assert('Invalid group: 5 tiles', !isValidGroup(group5));
+
+        // Invalid: same number but duplicate color
+        const groupDupColor = [
+            makeTile(240, 'red', 8),
+            makeTile(241, 'red', 8),
+            makeTile(242, 'blue', 8),
+        ];
+        assert('Invalid group: duplicate colors', !isValidGroup(groupDupColor));
+
+        // Invalid: different numbers
+        const groupDiffNum = [
+            makeTile(250, 'red', 5),
+            makeTile(251, 'blue', 6),
+            makeTile(252, 'black', 7),
+        ];
+        assert('Invalid group: different numbers', !isValidGroup(groupDiffNum));
+
+        // Group with joker
+        const groupWithJoker = [
+            makeTile(260, 'red', 9),
+            makeTile(261, 'blue', 9),
+            makeTile(262, 'joker', 0, true),
+        ];
+        assert('Valid group with joker substituting', isValidGroup(groupWithJoker));
+
+        // ===========================
+        // 3. MELD VALIDATION — RUNS
+        // ===========================
+        section('3. Meld Validation — Runs');
+
+        // Valid run: 3 consecutive same color
+        const run3 = [
+            makeTile(300, 'red', 3),
+            makeTile(301, 'red', 4),
+            makeTile(302, 'red', 5),
+        ];
+        assert('Valid run of 3 (consecutive same color)', isValidRun(run3));
+        assert('Valid meld: run of 3', isValidMeld(run3));
+
+        // Valid run: 5 consecutive
+        const run5 = [
+            makeTile(310, 'blue', 1),
+            makeTile(311, 'blue', 2),
+            makeTile(312, 'blue', 3),
+            makeTile(313, 'blue', 4),
+            makeTile(314, 'blue', 5),
+        ];
+        assert('Valid run of 5', isValidRun(run5));
+
+        // Valid run: entire 1-13
+        const runFull = [];
+        for (let i = 1; i <= 13; i++) {
+            runFull.push(makeTile(320 + i, 'orange', i));
+        }
+        assert('Valid run of 13 (full range)', isValidRun(runFull));
+
+        // Invalid: 2 tiles
+        const run2 = [
+            makeTile(340, 'red', 5),
+            makeTile(341, 'red', 6),
+        ];
+        assert('Invalid run: only 2 tiles', !isValidRun(run2));
+
+        // Invalid: different colors
+        const runMixedColor = [
+            makeTile(350, 'red', 3),
+            makeTile(351, 'blue', 4),
+            makeTile(352, 'red', 5),
+        ];
+        assert('Invalid run: mixed colors', !isValidRun(runMixedColor));
+
+        // Invalid: not consecutive
+        const runGap = [
+            makeTile(360, 'red', 3),
+            makeTile(361, 'red', 5),
+            makeTile(362, 'red', 6),
+        ];
+        assert('Invalid run: gap without joker', !isValidRun(runGap));
+
+        // Invalid: duplicate numbers
+        const runDup = [
+            makeTile(370, 'red', 4),
+            makeTile(371, 'red', 4),
+            makeTile(372, 'red', 5),
+        ];
+        assert('Invalid run: duplicate numbers', !isValidRun(runDup));
+
+        // Run with joker filling a gap
+        const runJokerGap = [
+            makeTile(380, 'red', 3),
+            makeTile(381, 'joker', 0, true),
+            makeTile(382, 'red', 5),
+        ];
+        assert('Valid run with joker filling gap (3, J, 5)', isValidRun(runJokerGap));
+
+        // Run with joker at end
+        const runJokerEnd = [
+            makeTile(390, 'blue', 11),
+            makeTile(391, 'blue', 12),
+            makeTile(392, 'joker', 0, true),
+        ];
+        assert('Valid run with joker at end (11, 12, J)', isValidRun(runJokerEnd));
+
+        // ===========================
+        // 4. TABLE VALIDATION
+        // ===========================
+        section('4. Table Validation');
+
+        const validTable = [group3, run3];
+        const tableResult = validateTable(validTable);
+        assert('Valid table with 2 valid melds', tableResult.valid);
+        assertEqual('No invalid meld indices', tableResult.invalidMeldIndices, []);
+
+        const invalidTable = [group3, run2]; // run2 is invalid (only 2 tiles)
+        const invalidResult = validateTable(invalidTable);
+        assert('Invalid table detected', !invalidResult.valid);
+        assertEqual('Invalid meld index is [1]', invalidResult.invalidMeldIndices, [1]);
+
+        const emptyTable = [];
+        const emptyResult = validateTable(emptyTable);
+        assert('Empty table is valid', emptyResult.valid);
+
+        // ===========================
+        // 5. INITIAL MELD REQUIREMENT
+        // ===========================
+        section('5. Initial Meld Requirement (≥30 points)');
+
+        const tiles30 = [
+            makeTile(400, 'red', 10),
+            makeTile(401, 'blue', 10),
+            makeTile(402, 'black', 10),
+        ];
+        assert('Tiles summing to 30 meet requirement', meetsInitialMeldRequirement(tiles30));
+
+        const tiles29 = [
+            makeTile(410, 'red', 10),
+            makeTile(411, 'blue', 10),
+            makeTile(412, 'black', 9),
+        ];
+        assert('Tiles summing to 29 do NOT meet requirement', !meetsInitialMeldRequirement(tiles29));
+
+        const tilesWithJoker = [
+            makeTile(420, 'red', 1),
+            makeTile(421, 'joker', 0, true),
+        ];
+        assert('Joker (30) + 1 = 31 meets requirement', meetsInitialMeldRequirement(tilesWithJoker));
+
+        const tilesHigh = [
+            makeTile(430, 'red', 11),
+            makeTile(431, 'blue', 12),
+            makeTile(432, 'orange', 13),
+        ];
+        assert('11+12+13 = 36 meets requirement', meetsInitialMeldRequirement(tilesHigh));
+
+        // ===========================
+        // 6. GAME STATE — CREATION & BASICS
+        // ===========================
+        section('6. Game State — Creation');
+
+        const players = [
+            { id: 'host-123', name: 'Alice' },
+            { id: 'guest-456', name: 'Bob' },
+        ];
+        const gs = createGameState(players, 42);
+
+        assertEqual('Game has 2 players', gs.players.length, 2);
+        assertEqual('Player 1 is Alice', gs.players[0].name, 'Alice');
+        assertEqual('Player 2 is Bob', gs.players[1].name, 'Bob');
+        assertEqual('Current player index starts at 0', gs.currentPlayerIndex, 0);
+        assertEqual('Turn number starts at 0', gs.turnNumber, 0);
+        assert('Game is not over', !gs.gameOver);
+        assert('No winner yet', gs.winner === null);
+
+        // Each player should have 14 tiles
+        assertEqual('Alice has 14 tiles', gs.hands['host-123'].length, 14);
+        assertEqual('Bob has 14 tiles', gs.hands['guest-456'].length, 14);
+
+        // Pool should have 106 - 28 = 78 tiles
+        assertEqual('Pool has 78 tiles after dealing', gs.pool.length, 78);
+
+        // Table should be empty
+        assertEqual('Table is empty', gs.table.length, 0);
+
+        // All tiles should have unique IDs
+        const allGameTiles = [
+            ...gs.hands['host-123'],
+            ...gs.hands['guest-456'],
+            ...gs.pool,
+        ];
+        const gameIds = new Set(allGameTiles.map(t => t.id));
+        assertEqual('All tiles in game have unique IDs', gameIds.size, 106);
+
+        // ===========================
+        // 7. GAME STATE — TURNS & DRAWING
+        // ===========================
+        section('7. Game State — Turns & Drawing');
+
+        const currentP = getCurrentPlayer(gs);
+        assertEqual('Current player is Alice', currentP.name, 'Alice');
+
+        advanceTurn(gs);
+        const nextP = getCurrentPlayer(gs);
+        assertEqual('After advance, current player is Bob', nextP.name, 'Bob');
+        assertEqual('Turn number is now 1', gs.turnNumber, 1);
+
+        advanceTurn(gs);
+        const backToAlice = getCurrentPlayer(gs);
+        assertEqual('Turn wraps back to Alice', backToAlice.name, 'Alice');
+        assertEqual('Turn number is now 2', gs.turnNumber, 2);
+
+        // Draw tile
+        const poolBefore = gs.pool.length;
+        const drawnTile = drawTile(gs, 'host-123');
+        assert('Drawn tile is not null', drawnTile !== null);
+        assertEqual('Pool decreased by 1', gs.pool.length, poolBefore - 1);
+        assertEqual('Alice hand increased by 1', gs.hands['host-123'].length, 15);
+        assert('Drawn tile is in Alice hand', gs.hands['host-123'].some(t => t.id === drawnTile.id));
+
+        // ===========================
+        // 8. GAME STATE — APPLY TURN
+        // ===========================
+        section('8. Game State — Apply Turn (Valid & Invalid)');
+
+        // Create a fresh game for turn testing
+        const gsT = createGameState([
+            { id: 'p1', name: 'Player1' },
+            { id: 'p2', name: 'Player2' },
+        ], 100);
+
+        // Try to end turn without placing any tiles
+        const noPlayResult = applyTurn(gsT, 'p1', [], [...gsT.hands['p1']]);
+        assert('Cannot end turn without placing tiles', !noPlayResult.valid);
+        assert('Error mentions placing tiles', noPlayResult.error.includes('must place'));
+
+        // Try to apply turn for wrong player
+        const wrongPlayerResult = applyTurn(gsT, 'p2', [], []);
+        // Note: applyTurn doesn't check turn order itself — that's handled by _handleTurnAsHost
+        // So we test the turn order check separately
+
+        // Simulate initial meld: find tiles that sum >= 30
+        const p1Hand = [...gsT.hands['p1']];
+        // Sort by number descending to easily find high-value tiles
+        const sorted = [...p1Hand].sort((a, b) => (b.isJoker ? 30 : b.number) - (a.isJoker ? 30 : a.number));
+        
+        // Take top 3 tiles by value for initial meld attempt
+        const meldTiles = sorted.slice(0, 3);
+        const meldSum = meldTiles.reduce((s, t) => s + (t.isJoker ? 30 : t.number), 0);
+        
+        // Check if it's a valid meld before we test applyTurn
+        const isValid = isValidMeld(meldTiles);
+        
+        // Test: attempt initial meld with less than 30 points
+        // Create tiles that sum < 30
+        const lowTiles = p1Hand.filter(t => !t.isJoker && t.number <= 3).slice(0, 3);
+        if (lowTiles.length >= 3) {
+            const lowMeld = lowTiles;
+            const lowRack = p1Hand.filter(t => !lowTiles.find(lt => lt.id === t.id));
+            const lowResult = applyTurn(gsT, 'p1', [lowMeld], lowRack);
+            // Might fail for meld validity or initial meld requirement
+            if (isValidMeld(lowMeld)) {
+                assert('Low-value initial meld rejected (< 30 points)', !lowResult.valid);
+            } else {
+                assert('Invalid meld rejected', !lowResult.valid);
+            }
+        }
+
+        // ===========================
+        // 9. PLAYER VIEW
+        // ===========================
+        section('9. Player View (Information Hiding)');
+
+        const gsV = createGameState([
+            { id: 'viewHost', name: 'ViewHost' },
+            { id: 'viewGuest', name: 'ViewGuest' },
+        ], 555);
+
+        const hostView = createPlayerView(gsV, 'viewHost');
+        const guestView = createPlayerView(gsV, 'viewGuest');
+
+        assert('Host view has own hand', Array.isArray(hostView.hand));
+        assertEqual('Host view hand count matches', hostView.hand.length, 14);
+        assert('Guest view has own hand', Array.isArray(guestView.hand));
+        assertEqual('Guest view hand count matches', guestView.hand.length, 14);
+
+        // Views should NOT contain the other player's actual hand
+        assert('Host view hand differs from guest view hand', 
+            JSON.stringify(hostView.hand) !== JSON.stringify(guestView.hand));
+
+        // Hand counts should be present for all players
+        assertEqual('Host view has handCounts for host', hostView.handCounts['viewHost'], 14);
+        assertEqual('Host view has handCounts for guest', hostView.handCounts['viewGuest'], 14);
+        assertEqual('Guest view has handCounts for host', guestView.handCounts['viewHost'], 14);
+        assertEqual('Guest view has handCounts for guest', guestView.handCounts['viewGuest'], 14);
+
+        assert('View has pool size', typeof hostView.poolSize === 'number');
+        assertEqual('Pool size in view', hostView.poolSize, 78);
+        assert('View has table', Array.isArray(hostView.table));
+        assert('View has players', Array.isArray(hostView.players));
+        assertEqual('View has correct player count', hostView.players.length, 2);
+        assert('View has currentPlayerIndex', typeof hostView.currentPlayerIndex === 'number');
+        assert('View has turnNumber', typeof hostView.turnNumber === 'number');
+        assert('View has hasPlayedInitialMeld', typeof hostView.hasPlayedInitialMeld === 'boolean');
+
+        // ===========================
+        // 10. SCORING
+        // ===========================
+        section('10. Scoring');
+
+        const gsS = createGameState([
+            { id: 'scorer1', name: 'S1' },
+            { id: 'scorer2', name: 'S2' },
+        ], 777);
+
+        // Simulate: scorer1 wins (empty hand)
+        gsS.hands['scorer1'] = [];
+        gsS.hands['scorer2'] = [
+            makeTile(500, 'red', 5),
+            makeTile(501, 'blue', 10),
+            makeTile(502, 'orange', 13),
+        ];
+        gsS.gameOver = true;
+        gsS.winner = 'scorer1';
+
+        const scores = calculateScores(gsS);
+        assertEqual('Winner score = sum of loser tiles (5+10+13=28)', scores['scorer1'], 28);
+        assertEqual('Loser score = -28', scores['scorer2'], -28);
+
+        // ===========================
+        // 11. SIMULATED P2P GAME FLOW
+        // ===========================
+        section('11. Simulated P2P Game Flow');
+
+        // Simulate the message flow that would happen in a real P2P game
+        // Host creates game, guest joins, game starts, turns are taken
+
+        // Step 1: Create game state (as host would)
+        const simPlayers = [
+            { id: 'sim-host', name: 'SimHost' },
+            { id: 'sim-guest', name: 'SimGuest' },
+        ];
+        const simState = createGameState(simPlayers, 42424242);
+        assert('[P2P Sim] Game state created', simState !== null);
+        assertEqual('[P2P Sim] Two players in game', simState.players.length, 2);
+
+        // Step 2: Create player views (as host would send to each player)
+        const simHostView = createPlayerView(simState, 'sim-host');
+        const simGuestView = createPlayerView(simState, 'sim-guest');
+        assert('[P2P Sim] Host receives their view', simHostView.hand.length === 14);
+        assert('[P2P Sim] Guest receives their view', simGuestView.hand.length === 14);
+        assert('[P2P Sim] Views contain different hands', 
+            simHostView.hand[0].id !== simGuestView.hand[0].id);
+
+        // Step 3: First player (sim-host) draws a tile (can't make initial meld)
+        const simCurrentPlayer1 = getCurrentPlayer(simState);
+        assertEqual('[P2P Sim] First turn is host', simCurrentPlayer1.id, 'sim-host');
+
+        const simDrawn = drawTile(simState, 'sim-host');
+        assert('[P2P Sim] Host draws a tile', simDrawn !== null);
+        assertEqual('[P2P Sim] Host now has 15 tiles', simState.hands['sim-host'].length, 15);
+        advanceTurn(simState);
+
+        // Step 4: Second player (sim-guest) draws a tile
+        const simCurrentPlayer2 = getCurrentPlayer(simState);
+        assertEqual('[P2P Sim] Second turn is guest', simCurrentPlayer2.id, 'sim-guest');
+
+        const simDrawn2 = drawTile(simState, 'sim-guest');
+        assert('[P2P Sim] Guest draws a tile', simDrawn2 !== null);
+        assertEqual('[P2P Sim] Guest now has 15 tiles', simState.hands['sim-guest'].length, 15);
+        advanceTurn(simState);
+
+        // Step 5: Verify views are updated after turns
+        const updatedHostView = createPlayerView(simState, 'sim-host');
+        const updatedGuestView = createPlayerView(simState, 'sim-guest');
+        assertEqual('[P2P Sim] Updated host hand has 15 tiles', updatedHostView.hand.length, 15);
+        assertEqual('[P2P Sim] Updated guest hand has 15 tiles', updatedGuestView.hand.length, 15);
+        assertEqual('[P2P Sim] Pool decreased by 2', updatedHostView.poolSize, 76);
+        assertEqual('[P2P Sim] Turn number is 2', simState.turnNumber, 2);
+
+        // Step 6: Verify turn order enforcement
+        // getCurrentPlayer should now be host again (index 0)
+        const simCurrentPlayer3 = getCurrentPlayer(simState);
+        assertEqual('[P2P Sim] Turn cycles back to host', simCurrentPlayer3.id, 'sim-host');
+
+        // ===========================
+        // 12. NETWORK MESSAGE SIMULATION
+        // ===========================
+        section('12. Network Message Protocol Simulation');
+
+        // Simulate the full message flow between host and guest
+        const messageLog = [];
+
+        // Mock network: capture messages that would be sent
+        function mockSendTo(target, type, data) {
+            messageLog.push({ target, type, data });
+        }
+        function mockBroadcast(type, data) {
+            messageLog.push({ target: 'all', type, data });
+        }
+
+        // 1. Guest joins: sends lobby:join to host
+        messageLog.push({ target: 'host', type: 'lobby:join', data: { name: 'TestGuest', peerId: 'guest-id' } });
+        assert('[Net Sim] Guest sends lobby:join', messageLog.length === 1);
+        assertEqual('[Net Sim] Join message type', messageLog[0].type, 'lobby:join');
+
+        // 2. Host broadcasts updated player list
+        const netPlayers = [
+            { id: 'host-id', name: 'TestHost' },
+            { id: 'guest-id', name: 'TestGuest' },
+        ];
+        mockBroadcast('lobby:player-list', { players: netPlayers });
+        assert('[Net Sim] Host broadcasts player list', messageLog[1].type === 'lobby:player-list');
+        assertEqual('[Net Sim] Player list has 2 players', messageLog[1].data.players.length, 2);
+
+        // 3. Host starts game: broadcasts lobby:start
+        mockBroadcast('lobby:start', { players: netPlayers });
+        assert('[Net Sim] Host broadcasts lobby:start', messageLog[2].type === 'lobby:start');
+
+        // 4. Host sends game:state to each player
+        const netGameState = createGameState(netPlayers, 12345);
+        for (const p of netPlayers) {
+            const view = createPlayerView(netGameState, p.id);
+            mockSendTo(p.id, 'game:state', view);
+        }
+        assert('[Net Sim] Host sends game:state to host', messageLog[3].type === 'game:state');
+        assert('[Net Sim] Host sends game:state to guest', messageLog[4].type === 'game:state');
+        assertEqual('[Net Sim] Host view has 14 tiles', messageLog[3].data.hand.length, 14);
+        assertEqual('[Net Sim] Guest view has 14 tiles', messageLog[4].data.hand.length, 14);
+
+        // 5. Guest sends game:draw (can't play)
+        messageLog.push({ target: 'host', type: 'game:draw', data: {} });
+        assert('[Net Sim] Guest sends game:draw', messageLog[5].type === 'game:draw');
+
+        // 6. Host processes draw, sends updated states
+        drawTile(netGameState, 'guest-id');
+        advanceTurn(netGameState);
+        for (const p of netPlayers) {
+            const view = createPlayerView(netGameState, p.id);
+            mockSendTo(p.id, 'game:state', view);
+        }
+        assert('[Net Sim] Updated states sent after draw', messageLog.length === 8);
+        assertEqual('[Net Sim] Guest now has 15 tiles in view', messageLog[7].data.hand.length, 15);
+
+        // 7. Verify message protocol structure
+        for (const msg of messageLog) {
+            assert(`[Net Sim] Message "${msg.type}" has target`, typeof msg.target === 'string');
+            assert(`[Net Sim] Message "${msg.type}" has type`, typeof msg.type === 'string');
+            assert(`[Net Sim] Message "${msg.type}" has data`, msg.data !== undefined);
+        }
+
+        // ===========================
+        // 13. MULTI-PLAYER (3+) GAME
+        // ===========================
+        section('13. Multi-Player (3+) Game');
+
+        const mp3Players = [
+            { id: 'mp1', name: 'P1' },
+            { id: 'mp2', name: 'P2' },
+            { id: 'mp3', name: 'P3' },
+        ];
+        const mp3State = createGameState(mp3Players, 9999);
+        assertEqual('[3P] Three players created', mp3State.players.length, 3);
+        assertEqual('[3P] Each gets 14 tiles — P1', mp3State.hands['mp1'].length, 14);
+        assertEqual('[3P] Each gets 14 tiles — P2', mp3State.hands['mp2'].length, 14);
+        assertEqual('[3P] Each gets 14 tiles — P3', mp3State.hands['mp3'].length, 14);
+        assertEqual('[3P] Pool has 106 - 42 = 64 tiles', mp3State.pool.length, 64);
+
+        // Turn order: P1 -> P2 -> P3 -> P1
+        assertEqual('[3P] Turn starts with P1', getCurrentPlayer(mp3State).id, 'mp1');
+        advanceTurn(mp3State);
+        assertEqual('[3P] Next is P2', getCurrentPlayer(mp3State).id, 'mp2');
+        advanceTurn(mp3State);
+        assertEqual('[3P] Next is P3', getCurrentPlayer(mp3State).id, 'mp3');
+        advanceTurn(mp3State);
+        assertEqual('[3P] Wraps back to P1', getCurrentPlayer(mp3State).id, 'mp1');
+
+        // Views for 3 players
+        const mp3View1 = createPlayerView(mp3State, 'mp1');
+        const mp3View2 = createPlayerView(mp3State, 'mp2');
+        assertEqual('[3P] P1 view shows 3 players', mp3View1.players.length, 3);
+        assertEqual('[3P] P1 view has hand counts for all', Object.keys(mp3View1.handCounts).length, 3);
+        assert('[3P] P1 and P2 have different hands', 
+            JSON.stringify(mp3View1.hand) !== JSON.stringify(mp3View2.hand));
+
+        // ===========================
+        // 14. EDGE CASES
+        // ===========================
+        section('14. Edge Cases');
+
+        // Empty pool draw
+        const gsEmpty = createGameState([
+            { id: 'e1', name: 'E1' },
+            { id: 'e2', name: 'E2' },
+        ], 111);
+        gsEmpty.pool = []; // Empty the pool
+        const emptyDraw = drawTile(gsEmpty, 'e1');
+        assert('Drawing from empty pool returns null', emptyDraw === null);
+        assertEqual('Hand unchanged after empty draw', gsEmpty.hands['e1'].length, 14);
+
+        // Win condition via applyTurn
+        const gsWin = createGameState([
+            { id: 'w1', name: 'Winner' },
+            { id: 'w2', name: 'Loser' },
+        ], 222);
+
+        // Manually set up a winnable state
+        gsWin.hasPlayedInitialMeld['w1'] = true; // Skip initial meld check
+        // Give w1 exactly 3 tiles that form a valid meld
+        gsWin.hands['w1'] = [
+            makeTile(600, 'red', 10),
+            makeTile(601, 'blue', 10),
+            makeTile(602, 'black', 10),
+        ];
+        const winTable = [...gsWin.table, gsWin.hands['w1']];
+        const winResult = applyTurn(gsWin, 'w1', winTable, []);
+        assert('Win condition: valid turn', winResult.valid);
+        assert('Win condition: game is over', gsWin.gameOver);
+        assertEqual('Win condition: winner is w1', gsWin.winner, 'w1');
+
+        // Scoring after win
+        const winScores = calculateScores(gsWin);
+        assert('Winner has positive score', winScores['w1'] >= 0);
+        assert('Loser has negative score', winScores['w2'] <= 0);
+
+        // ===========================
+        // 15. GAME STATE CONSISTENCY
+        // ===========================
+        section('15. Game State Consistency');
+
+        const gsC = createGameState([
+            { id: 'c1', name: 'C1' },
+            { id: 'c2', name: 'C2' },
+        ], 333);
+
+        // Total tiles should always = 106
+        function countAllTiles(state) {
+            let count = state.pool.length;
+            for (const pid of Object.keys(state.hands)) {
+                count += state.hands[pid].length;
+            }
+            for (const meld of state.table) {
+                count += meld.length;
+            }
+            return count;
+        }
+
+        assertEqual('Total tiles = 106 at start', countAllTiles(gsC), 106);
+
+        // Draw tiles and check consistency
+        drawTile(gsC, 'c1');
+        assertEqual('Total tiles = 106 after draw', countAllTiles(gsC), 106);
+
+        drawTile(gsC, 'c2');
+        assertEqual('Total tiles = 106 after 2nd draw', countAllTiles(gsC), 106);
+
+        // ===========================
+        // SUMMARY
+        // ===========================
+        showSummary();
+
+        console.log(`\n=== TEST RESULTS: ${totalPass}/${totalPass + totalFail} passed ===\n`);
+        if (totalFail > 0) {
+            console.error(`${totalFail} test(s) FAILED`);
+        }
+    </script>
+</body>
+</html>
