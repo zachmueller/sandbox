@@ -13,7 +13,7 @@ The `main` branch is kept intentionally minimal, containing only:
 - Shared Cline rules and workflows (`.clinerules/`)
 - This README and license
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
+Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches/all) to browse available experiments.
 
 ## Cline Rules & Workflows
 
