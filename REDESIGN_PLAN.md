@@ -7,10 +7,31 @@ Transform the game from a Chinese idiom (成语) guessing game into a **stroke-o
 ## Core Concept
 
 - **Target characters**: Chinese characters with exactly **7 strokes**
-- **Gameplay**: Player selects stroke types in order, then submits their guess
+- **Gameplay**: Player taps/clicks stroke types from a palette in order, then submits their guess (entirely click-based, no text input)
 - **Evaluation**: Same green/yellow/gray feedback system as before, but applied to stroke positions
 - **Attempts**: 6 tries to get the correct stroke order
-- **Character visibility**: Toggleable setting (default: **visible**). When visible, the player tests their stroke-order knowledge. When hidden, it becomes a harder puzzle.
+- **Character visibility**: Toggleable setting (default: **visible**). When visible, the player tests their stroke-order knowledge. When hidden, it becomes an extreme difficulty puzzle with no hints of any kind.
+- **Replayability**: Unlimited replays; each replay picks a random character (no deduplication)
+
+## Resolved Design Decisions
+
+The following decisions were made during the design review to resolve ambiguities:
+
+| # | Topic | Decision |
+|---|-------|----------|
+| 1 | **Yellow/repeated stroke handling** | Standard Wordle count-based matching. If the answer has 2 instances of 撇 and the player guesses 3, only 2 are marked green/yellow; the 3rd is gray. |
+| 2 | **Palette button color state** | Stroke palette buttons update with best-known state after each guess (Wordle keyboard behavior). A stroke type is only grayed out on the palette if ALL instances in the answer are accounted for. |
+| 3 | **Stroke data source** | Best-guess stroke-order data for the initial build. Data accuracy will be refined through iteration in future updates. |
+| 4 | **Hidden character mode — hints** | When the target character is hidden, **no hints are available at all** (pinyin hint button is hidden/disabled). The extreme difficulty is intentional. |
+| 5 | **Replay behavior** | Unlimited replays. Each replay picks a random character. No deduplication — the player may encounter the same character again. |
+| 6 | **Submit button state** | Submit button is **disabled until exactly 7 strokes** are filled in the current row. |
+| 7 | **Palette layout/grouping** | Exact grouping of stroke buttons is flexible (not strictly enforced). All palette buttons should ideally be visible at once without scrolling. |
+| 8 | **Undo behavior** | Removes only the **single most recent stroke** from the current (un-submitted) row. |
+| 9 | **Clear behavior** | Removes **all strokes** from the current (un-submitted) row. |
+| 10 | **Post-submit editing** | Not allowed. Once a row is submitted, it cannot be modified. |
+| 11 | **Reveal animation timing** | Total reveal duration stays roughly the same as the current 4-cell game (~2.1s). With 7 cells, each cell flips at ~300ms intervals. |
+| 12 | **Mobile/responsive** | Not a high priority. Responsive requirements are lax for the initial build. |
+| 13 | **Keyboard input** | None. The game is entirely tap/click-based via the stroke palette. No text input or IME needed. |
 
 ## Fundamental Stroke Types
 
@@ -96,31 +117,37 @@ Replace `js/words.js` with a character data file. Each entry contains:
 
 1. **Game start**: A 7-stroke character is selected (date-based for daily, random for replays)
 2. **Character display**: Target character is shown (unless toggled off)
-3. **Stroke selection**: Player clicks stroke buttons from the palette; each click appends a stroke to the current guess row (up to 7)
-4. **Editing**: Player can use "Undo" to remove the last stroke, or "Clear" to reset the current row
-5. **Submission**: Player clicks "Submit" when 7 strokes are selected
+3. **Stroke selection**: Player clicks stroke buttons from the palette; each click appends a stroke to the current guess row (up to 7). No keyboard/text input — entirely click-based.
+4. **Editing**: Player can use "Undo" to remove the single most recent stroke, or "Clear" to reset the entire current row. Submitted rows cannot be edited.
+5. **Submission**: Player clicks "Submit" when 7 strokes are selected. **Submit button is disabled until all 7 slots are filled.**
 6. **Evaluation**: Each stroke position is evaluated:
    - 🟩 **Green (correct)**: Correct stroke type in the correct position
    - 🟨 **Yellow (present)**: This stroke type appears in the answer but not at this position
    - ⬜ **Gray (absent)**: This stroke type does not appear in the remaining unmatched positions
-7. **Reveal animation**: Same flip animation as current game, applied per stroke slot
-8. **Win/Lose**: Player wins by getting all 7 strokes correct, or loses after 6 attempts
+7. **Reveal animation**: Same flip animation as current game, applied per stroke slot. Total duration stays roughly the same (~2.1s); each of the 7 cells flips at ~300ms intervals.
+8. **Palette update**: After reveal, stroke palette button colors update to reflect best-known state (Wordle keyboard behavior). Stroke types are only fully grayed out when all instances are accounted for.
+9. **Win/Lose**: Player wins by getting all 7 strokes correct, or loses after 6 attempts. Unlimited replays available from the game-over modal.
 
 ## Evaluation Logic
 
-Same algorithm as current Wordle-style evaluation:
+Standard Wordle-style evaluation with **count-based matching** for repeated stroke types:
 
 ```
 1. First pass: Mark exact matches (correct stroke in correct position) → green
-2. Second pass: For remaining unmatched strokes, check if stroke type exists 
-   in remaining unmatched target strokes → yellow, otherwise → gray
+   - Mark matched positions as consumed in both guess and target
+2. Second pass: For each remaining unmatched guess stroke, check if that stroke type 
+   exists among remaining unmatched target strokes → yellow (consume one instance), 
+   otherwise → gray
 ```
+
+This means if the answer has 2 of a stroke type and the player guesses 3, only 2 will be green/yellow and the 3rd will be gray — identical to standard Wordle behavior.
 
 ## Settings
 
-- **Toggle character visibility**: Default ON (visible). When OFF, character is hidden (replaced with "?") making the game much harder.
+- **Toggle character visibility**: Default ON (visible). When OFF, character is hidden (replaced with "?") making the game extremely hard.
   - Stored in localStorage for persistence
-- **Pinyin hint**: Button to reveal the character's pinyin (same as current game)
+  - When character is hidden: **no hints of any kind** are available (pinyin hint button is hidden/disabled)
+- **Pinyin hint**: Button to reveal the character's pinyin. **Only available when character visibility is ON.**
 
 ## Files to Change
 
