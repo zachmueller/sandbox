@@ -1,0 +1,639 @@
+/* ========================
+   CSS Variables & Reset
+   ======================== */
+:root {
+    --bg-dark: #1a1a2e;
+    --bg-medium: #16213e;
+    --bg-light: #0f3460;
+    --bg-surface: #1e2a4a;
+    --accent: #e94560;
+    --accent-hover: #ff6b81;
+    --text-primary: #eee;
+    --text-secondary: #aab;
+    --text-muted: #667;
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --error: #e74c3c;
+    --tile-bg: #faf3e0;
+    --tile-border: #d4c5a0;
+    --tile-shadow: rgba(0, 0, 0, 0.3);
+    --meld-bg: rgba(255, 255, 255, 0.08);
+    --meld-border: rgba(255, 255, 255, 0.15);
+    --meld-invalid: rgba(231, 76, 60, 0.3);
+    --rack-bg: rgba(0, 0, 0, 0.3);
+    --table-bg: #1b5e20;
+    --table-felt: #2e7d32;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+/* ========================
+   Screens
+   ======================== */
+.screen {
+    display: none;
+    width: 100%;
+    height: 100vh;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ========================
+   Lobby Screen
+   ======================== */
+.lobby-container {
+    background: var(--bg-medium);
+    border-radius: 16px;
+    padding: 40px 48px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.lobby-container h1 {
+    font-size: 2.2rem;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    font-size: 0.95rem;
+}
+
+.lobby-section {
+    margin-bottom: 16px;
+}
+
+.lobby-section h2 {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-group input {
+    padding: 12px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+    border-color: var(--accent);
+}
+
+.input-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.lobby-divider {
+    text-align: center;
+    margin: 24px 0;
+    position: relative;
+}
+
+.lobby-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.lobby-divider span {
+    position: relative;
+    background: var(--bg-medium);
+    padding: 0 16px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.status-message {
+    text-align: center;
+    padding: 8px;
+    margin-top: 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    min-height: 24px;
+}
+
+.status-error { color: var(--error); }
+.status-info { color: var(--accent); }
+.status-success { color: var(--success); }
+
+/* ========================
+   Buttons
+   ======================== */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--bg-light);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #1a4a8a;
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background: var(--warning);
+    color: #333;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #e67e22;
+    transform: translateY(-1px);
+}
+
+.btn-small {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    background: var(--bg-surface);
+}
+
+.btn-small:hover:not(:disabled) {
+    background: var(--bg-light);
+}
+
+/* ========================
+   Waiting Room
+   ======================== */
+.waiting-container {
+    background: var(--bg-medium);
+    border-radius: 16px;
+    padding: 40px 48px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.waiting-container h1 {
+    margin-bottom: 24px;
+}
+
+.game-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    font-size: 1rem;
+}
+
+.game-code-display code {
+    background: var(--bg-surface);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: var(--accent);
+    user-select: all;
+}
+
+.player-list {
+    margin: 16px 0 24px;
+}
+
+.player-item {
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.waiting-actions {
+    margin-top: 16px;
+}
+
+#waiting-message {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 12px;
+}
+
+/* ========================
+   Game Screen Layout
+   ======================== */
+#game-screen.active {
+    justify-content: stretch;
+    align-items: stretch;
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg-medium);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 54px;
+    flex-shrink: 0;
+}
+
+.opponents-info {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.opponent-card {
+    background: var(--bg-surface);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.opponent-card.current-turn {
+    border-color: var(--accent);
+}
+
+.opponent-card.is-me {
+    background: rgba(233, 69, 96, 0.15);
+}
+
+.opponent-card.pool-card {
+    background: rgba(46, 204, 113, 0.15);
+}
+
+.opponent-name {
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.opponent-tiles {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.turn-indicator {
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: var(--bg-surface);
+    white-space: nowrap;
+}
+
+.turn-indicator.my-turn {
+    background: var(--accent);
+    color: white;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.message-error {
+    background: var(--error) !important;
+    color: white !important;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ========================
+   Table Area
+   ======================== */
+.table-area {
+    flex: 1;
+    background: var(--table-bg);
+    background-image:
+        radial-gradient(ellipse at center, var(--table-felt) 0%, var(--table-bg) 70%);
+    overflow-y: auto;
+    padding: 16px;
+    min-height: 200px;
+}
+
+.table-melds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-content: flex-start;
+    min-height: 100%;
+    padding: 8px;
+    border-radius: 12px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.table-melds.drag-over {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
+}
+
+.table-placeholder {
+    width: 100%;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1.1rem;
+    padding: 40px 0;
+    pointer-events: none;
+}
+
+/* ========================
+   Melds
+   ======================== */
+.meld {
+    display: flex;
+    gap: 3px;
+    background: var(--meld-bg);
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: 2px solid var(--meld-border);
+    transition: border-color 0.2s, background 0.2s;
+    align-items: center;
+}
+
+.meld.drag-over {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.12);
+}
+
+.meld.invalid {
+    border-color: var(--error);
+    background: var(--meld-invalid);
+    animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+/* ========================
+   Tiles
+   ======================== */
+.tile {
+    width: 44px;
+    height: 60px;
+    background: var(--tile-bg);
+    border: 2px solid var(--tile-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    user-select: none;
+    position: relative;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    box-shadow: 0 2px 4px var(--tile-shadow);
+}
+
+.tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--tile-shadow);
+}
+
+.tile:active {
+    cursor: grabbing;
+}
+
+.tile.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.tile.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent), 0 4px 8px var(--tile-shadow);
+    transform: translateY(-4px);
+}
+
+.tile-label {
+    font-size: 1.3rem;
+    font-weight: 800;
+    pointer-events: none;
+}
+
+.tile-joker .tile-label {
+    font-size: 1.4rem;
+}
+
+/* Drag insertion indicators */
+.tile.drag-over-left {
+    border-left: 3px solid var(--accent);
+}
+
+.tile.drag-over-right {
+    border-right: 3px solid var(--accent);
+}
+
+/* ========================
+   Action Bar
+   ======================== */
+.action-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--bg-medium);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.action-spacer {
+    flex: 1;
+}
+
+/* ========================
+   Player Rack
+   ======================== */
+.rack-area {
+    background: var(--bg-dark);
+    padding: 12px 16px 16px;
+    flex-shrink: 0;
+}
+
+.player-rack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    padding: 12px;
+    background: var(--rack-bg);
+    border-radius: 12px;
+    min-height: 80px;
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.player-rack.drag-over {
+    border-color: var(--success);
+    background: rgba(46, 204, 113, 0.1);
+}
+
+/* ========================
+   Game Over Overlay
+   ======================== */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.overlay-content {
+    background: var(--bg-medium);
+    border-radius: 16px;
+    padding: 40px 48px;
+    max-width: 450px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-content h1 {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+.overlay-content p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.score-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.score-row span:last-child {
+    font-weight: 700;
+}
+
+#game-over-scores {
+    margin-bottom: 24px;
+}
+
+/* ========================
+   Scrollbar
+   ======================== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-light);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2a5a9a;
+}
+
+/* ========================
+   Responsive
+   ======================== */
+@media (max-width: 768px) {
+    .lobby-container,
+    .waiting-container,
+    .overlay-content {
+        padding: 24px 20px;
+    }
+
+    .top-bar {
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 12px;
+    }
+
+    .opponents-info {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .tile {
+        width: 38px;
+        height: 52px;
+    }
+
+    .tile-label {
+        font-size: 1.1rem;
+    }
+
+    .action-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .action-spacer {
+        display: none;
+    }
+}
