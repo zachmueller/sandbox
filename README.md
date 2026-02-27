@@ -1,30 +1,27 @@
-# sandbox
+# 2048 Web App Game
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple, browser-based implementation of the classic **2048** sliding tile puzzle game.
 
-## About
+## Overview
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+The goal of this project is to build a fully playable 2048 game as a single-page web application using HTML, CSS, and JavaScript. The game should be lightweight, responsive, and require no build tools or external dependencies to run — just open `index.html` in a browser.
 
-## Repo Structure
+## Game Rules
 
-The `main` branch is kept intentionally minimal, containing only:
+- The game is played on a **4×4 grid**.
+- Each turn, a new tile (value **2** or **4**) appears in a random empty cell.
+- The player slides all tiles in one of four directions (up, down, left, right) using arrow keys or swipe gestures.
+- When two tiles with the **same number** collide during a slide, they **merge** into one tile with their combined value.
+- The objective is to create a tile with the value **2048** (though play can continue beyond that).
+- The game ends when no valid moves remain.
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+## Planned Features
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
-
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+- Clean, responsive 4×4 game grid
+- Keyboard controls (arrow keys) for tile movement
+- Touch/swipe support for mobile devices
+- Score tracking with current and best score
+- New game / restart functionality
+- Win and game-over detection
+- Smooth tile animations and transitions
+- No external dependencies — pure HTML, CSS, and JavaScript
