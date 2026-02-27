@@ -10,6 +10,25 @@
     const STROKE_COUNT = 7;
     const REVEAL_DELAY_MS = 300; // delay between each tile flip
 
+    // SVG path data for visual stroke shapes (viewBox: 0 0 32 32)
+    const STROKE_SVG_PATHS = {
+        "横":       "M4,16 L28,16",                                       // héng – horizontal
+        "竖":       "M16,4 L16,28",                                       // shù – vertical
+        "撇":       "M24,5 L8,28",                                        // piě – left-falling
+        "捺":       "M8,5 Q16,14 26,28",                                  // nà – right-falling (slight curve)
+        "点":       "M13,8 L18,22",                                       // diǎn – dot
+        "提":       "M8,26 L24,8",                                        // tí – rising
+        "横折":     "M4,10 L20,10 L20,28",                                // héngzhé – horizontal then turn down
+        "竖折":     "M10,4 L10,20 L28,20",                                // shùzhé – vertical then turn right
+        "横撇":     "M4,8 L22,8 L8,26",                                   // héngpiě – horizontal then left-fall
+        "撇折":     "M24,4 L12,18 L28,28",                                // piězhé – left-fall then turn right
+        "横折钩":   "M3,6 L20,6 L20,23 Q20,27 16,23",                    // héngzhégōu – horizontal-turn-hook
+        "竖钩":     "M16,4 L16,24 Q16,28 11,24",                          // shùgōu – vertical-hook
+        "斜钩":     "M10,4 Q16,14 24,26 Q26,28 28,24",                    // xiégōu – slanting-hook
+        "竖弯钩":   "M8,4 L8,18 Q8,27 18,27 L24,27 Q27,27 27,22",        // shùwāngōu – vertical-curve-hook
+        "横折折撇": "M2,6 L13,6 L13,16 L22,16 L10,28",                   // héngzhézhépiě – horizontal-turn-turn-left-fall
+    };
+
     // === State ===
     let targetEntry = null; // { character, pinyin, meaning, strokeCount, strokes }
     let currentRow = 0;
@@ -99,6 +118,29 @@
     }
 
     // === Stroke Palette ===
+    function createStrokeSVG(strokeName) {
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 32 32");
+        svg.setAttribute("width", "28");
+        svg.setAttribute("height", "28");
+        svg.classList.add("stroke-svg");
+
+        const pathData = STROKE_SVG_PATHS[strokeName];
+        if (pathData) {
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", pathData);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", "currentColor");
+            path.setAttribute("stroke-width", "2.5");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+            svg.appendChild(path);
+        }
+
+        return svg;
+    }
+
     function buildPalette() {
         paletteEl.innerHTML = "";
 
@@ -118,8 +160,18 @@
                 const btn = document.createElement("button");
                 btn.classList.add("stroke-btn");
                 btn.dataset.stroke = stroke.name;
-                btn.textContent = stroke.name;
                 btn.title = `${stroke.name} (${stroke.pinyin})`;
+
+                // SVG visual shape
+                const svg = createStrokeSVG(stroke.name);
+                btn.appendChild(svg);
+
+                // Small text label
+                const label = document.createElement("span");
+                label.classList.add("stroke-label");
+                label.textContent = stroke.pinyin;
+                btn.appendChild(label);
+
                 btn.addEventListener("click", () => onStrokeClick(stroke.name));
                 group.appendChild(btn);
             });
