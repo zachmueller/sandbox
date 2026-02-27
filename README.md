@@ -1,30 +1,18 @@
-# sandbox
+# Chinese Wordle (汉字 Wordle)
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple web app game inspired by [Wordle](https://www.nytimes.com/games/wordle/index.html), but using Chinese characters instead of English letters.
 
-## About
+## Concept
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+Players attempt to guess a target Chinese word within a limited number of tries. After each guess, feedback is provided to indicate how close the guess is to the target word — similar to the color-coded tile system in the original Wordle.
 
-## Repo Structure
+## Goals
 
-The `main` branch is kept intentionally minimal, containing only:
+- Build a clean, browser-based game using HTML, CSS, and JavaScript
+- Support guessing Chinese characters (汉字) with visual feedback per character
+- Keep the game simple and fun, accessible to learners and native speakers alike
+- Explore mechanics unique to Chinese (e.g., tonal hints, radical-based clues, pinyin input)
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+## Status
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
-
-## Cline Rules & Workflows
-
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+🚧 **In development** — this branch is the starting point for the project.
