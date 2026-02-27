@@ -1,30 +1,24 @@
-# sandbox
+# Rummikub P2P
 
-A personal sandbox for experimenting with AI-assisted development tools and workflows.
+A simple web application for playing [Rummikub](https://en.wikipedia.org/wiki/Rummikub) peer-to-peer over the internet.
 
-## About
+## Overview
 
-This repo tracks a variety of experimental ideas — mostly revolving around testing AI tools (like [Cline](https://github.com/cline/cline)) — in a way that's easy to share publicly. Each distinct idea or concept lives on its own branch, keeping experiments isolated and self-contained. If an idea grows large enough, it may be extracted into a dedicated repo.
+This project implements a browser-based version of the classic tile-matching game Rummikub, allowing players to connect and play directly with each other using peer-to-peer networking — no central game server required.
 
-## Repo Structure
+## Goals
 
-The `main` branch is kept intentionally minimal, containing only:
+- **Web-based gameplay**: Play Rummikub entirely in the browser with no installs needed
+- **Peer-to-peer networking**: Players connect directly to each other (e.g., via WebRTC) without relying on a centralized game server
+- **Core Rummikub rules**: Support for standard Rummikub mechanics including tile sets, racks, melds (groups and runs), and turn-based play
+- **Simple UX**: Clean, intuitive interface for managing your rack, placing tiles on the table, and manipulating existing melds
 
-- Shared Cline rules and workflows (`.clinerules/`)
-- This README and license
+## Tech Stack
 
-Individual experiments live on separate branches. Check the [branches list](https://github.com/zachmueller/sandbox/branches) to browse available experiments.
+- HTML / CSS / JavaScript (vanilla or lightweight framework)
+- WebRTC (or similar) for peer-to-peer connectivity
+- A lightweight signaling mechanism for establishing connections (e.g., manual exchange, simple signaling server, or WebSocket relay)
 
-## Cline Rules & Workflows
+## Status
 
-The `.clinerules/` directory contains reusable configuration for [Cline](https://github.com/cline/cline) (an AI coding assistant for VS Code):
-
-**Rules:**
-- **`git.md`** — Standardized git workflow rules ensuring AI-generated commits follow a consistent format with full provenance tracking.
-
-**Workflows:**
-- **`workflows/new-branch.md`** — Standardized process for creating new experiment branches (handles naming, branching from `main`, and initial README creation).
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
+🚧 **In development** — this branch is the starting point for building out the game.
