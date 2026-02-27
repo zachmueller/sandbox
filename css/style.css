@@ -1,0 +1,369 @@
+/* === Reset & Base === */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --correct: #6aaa64;
+    --present: #c9b458;
+    --absent: #787c7e;
+    --bg: #121213;
+    --bg-light: #1a1a1b;
+    --tile-bg: #3a3a3c;
+    --tile-border: #565758;
+    --text: #ffffff;
+    --text-muted: #999999;
+    --font-size-tile: 2rem;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+#app {
+    max-width: 500px;
+    width: 100%;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+/* === Header === */
+header {
+    text-align: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--tile-border);
+    width: 100%;
+}
+
+header h1 {
+    font-size: 2rem;
+    letter-spacing: 0.05em;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+}
+
+/* === Message Bar === */
+.message-bar {
+    background: var(--text);
+    color: var(--bg);
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
+    transition: opacity 0.3s;
+}
+
+.message-bar.hidden {
+    display: none;
+}
+
+/* === Board === */
+.board {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+}
+
+.cell {
+    width: 72px;
+    height: 72px;
+    border: 2px solid var(--tile-border);
+    background: var(--bg-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-tile);
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: transform 0.3s, background-color 0.3s, border-color 0.3s;
+    border-radius: 4px;
+}
+
+.cell.filled {
+    border-color: #999;
+    animation: pop 0.1s ease;
+}
+
+.cell.correct {
+    background-color: var(--correct);
+    border-color: var(--correct);
+    color: white;
+}
+
+.cell.present {
+    background-color: var(--present);
+    border-color: var(--present);
+    color: white;
+}
+
+.cell.absent {
+    background-color: var(--absent);
+    border-color: var(--absent);
+    color: white;
+}
+
+.cell.reveal {
+    animation: flip 0.5s ease;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+@keyframes flip {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+.row.shake {
+    animation: shake 0.4s ease;
+}
+
+/* === Input Area === */
+.input-area {
+    display: flex;
+    gap: 0.6rem;
+    width: 100%;
+    max-width: 340px;
+}
+
+#guess-input {
+    flex: 1;
+    font-size: 1.3rem;
+    padding: 0.6rem 0.8rem;
+    border: 2px solid var(--tile-border);
+    border-radius: 6px;
+    background: var(--bg-light);
+    color: var(--text);
+    text-align: center;
+    letter-spacing: 0.3em;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#guess-input:focus {
+    border-color: var(--present);
+}
+
+#guess-input::placeholder {
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    font-size: 0.95rem;
+}
+
+/* === Buttons === */
+.btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-primary {
+    background: var(--correct);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5b9956;
+}
+
+.btn-secondary {
+    background: var(--tile-bg);
+    color: var(--text);
+}
+
+.btn-secondary:hover {
+    background: #4a4a4c;
+}
+
+/* === Hint Area === */
+.hint-area {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.hint-text {
+    font-size: 1.1rem;
+    color: var(--present);
+    font-style: italic;
+}
+
+.hint-text.hidden {
+    display: none;
+}
+
+/* === Modal === */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--bg-light);
+    border: 1px solid var(--tile-border);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.modal-content h2 {
+    font-size: 1.6rem;
+}
+
+.modal-answer {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+}
+
+.modal-pinyin {
+    color: var(--present);
+    font-size: 1.1rem;
+    font-style: italic;
+}
+
+.modal-meaning {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* === Footer === */
+footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--tile-border);
+    width: 100%;
+}
+
+footer p {
+    margin-bottom: 0.5rem;
+}
+
+.how-to-play {
+    text-align: left;
+    margin-top: 0.5rem;
+}
+
+.how-to-play summary {
+    cursor: pointer;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.instructions {
+    margin-top: 0.8rem;
+    line-height: 1.6;
+}
+
+.instructions ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.6rem 0;
+}
+
+.example {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 4px;
+    color: white;
+    vertical-align: middle;
+}
+
+.example.correct {
+    background-color: var(--correct);
+}
+
+.example.present {
+    background-color: var(--present);
+}
+
+.example.absent {
+    background-color: var(--absent);
+}
+
+/* === Responsive === */
+@media (max-width: 400px) {
+    .cell {
+        width: 60px;
+        height: 60px;
+        font-size: 1.6rem;
+    }
+
+    #guess-input {
+        font-size: 1.1rem;
+    }
+
+    header h1 {
+        font-size: 1.6rem;
+    }
+}
