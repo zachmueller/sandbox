@@ -85,19 +85,41 @@
         updateActionButtons();
     }
 
-    function pickCharacter() {
-        // Use date-based seed for a "daily" character
-        const today = new Date();
-        const dateIndex =
-            today.getFullYear() * 10000 +
-            (today.getMonth() + 1) * 100 +
-            today.getDate();
-        const index = dateIndex % CHARACTER_LIST.length;
-        return CHARACTER_LIST[index];
+    // === Session Tracking ===
+    function getCompletedCharacters() {
+        try {
+            const stored = sessionStorage.getItem("strokeGame_completed");
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            return [];
+        }
     }
 
-    function pickRandomCharacter() {
-        return CHARACTER_LIST[Math.floor(Math.random() * CHARACTER_LIST.length)];
+    function addCompletedCharacter(character) {
+        const completed = getCompletedCharacters();
+        if (!completed.includes(character)) {
+            completed.push(character);
+        }
+        // If all characters have been completed, reset the list
+        // (keep only the just-completed one so it won't repeat immediately)
+        if (completed.length >= CHARACTER_LIST.length) {
+            sessionStorage.setItem("strokeGame_completed", JSON.stringify([character]));
+        } else {
+            sessionStorage.setItem("strokeGame_completed", JSON.stringify(completed));
+        }
+    }
+
+    function pickCharacter() {
+        const completed = getCompletedCharacters();
+        // Filter to characters not yet completed in this session
+        let available = CHARACTER_LIST.filter(
+            (entry) => !completed.includes(entry.character)
+        );
+        // If all have been completed (or list is empty), allow any character
+        if (available.length === 0) {
+            available = CHARACTER_LIST;
+        }
+        return available[Math.floor(Math.random() * available.length)];
     }
 
     // === Board ===
@@ -412,9 +434,11 @@
 
         if (isWin) {
             gameOver = true;
+            addCompletedCharacter(targetEntry.character);
             showGameOverModal(true);
         } else if (currentRow >= MAX_GUESSES) {
             gameOver = true;
+            addCompletedCharacter(targetEntry.character);
             showGameOverModal(false);
         } else {
             // Reset for next guess
@@ -485,7 +509,7 @@
     toggleCharBtn.addEventListener("click", toggleCharacterVisibility);
 
     playAgainBtn.addEventListener("click", () => {
-        targetEntry = pickRandomCharacter();
+        targetEntry = pickCharacter();
         currentRow = 0;
         currentGuess = [];
         guesses = [];
